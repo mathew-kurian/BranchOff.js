@@ -15,7 +15,7 @@ var queue = async.queue((task, callback)=> {
 }, 1);
 
 var app = express();
-var handler = Hook();
+var handler = Hook({});
 var conf = pmx.initModule({
   widget: {
     type: 'generic',
@@ -320,7 +320,8 @@ if (require.main === module) {
     }
   }
 
-  var context = resolve(uri, branch);
-
-  jumpstart(context);
+  if (uri && branch) {
+    var context = resolve(uri, branch);
+    jumpstart(context);
+  }
 }
