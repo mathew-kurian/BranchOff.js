@@ -29,7 +29,7 @@ pm2 conf branch-off:default_branch https://github.com/bluejamesbond/BranchOff.js
 ### Webhook
 ```
 POST http://<host>:<port>/github/postreceive  # webhook
-POST http://<host>:<port>/                   # running ecosystem
+POST http://<host>:<port>/                    # running ecosystem
 GET  http://<host>:<port>/                    # visual ecosystem
 
 # deploy a uri, branch; 
