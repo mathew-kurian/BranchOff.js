@@ -110,14 +110,6 @@ function resolve(uri, branch) {
 
 function trigger(ctx, event) {
   var execScript = ['cd ', ctx.dir, '&&', '.', 'branchoff@' + event].join(' ');
-
-  try {
-    fs.statSync(file)
-  } catch (e) {
-    console.error(e);
-  }
-
-
   return exec(execScript).split('\n');
 }
 
