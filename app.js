@@ -8,6 +8,7 @@ var fs = require('fs');
 var shell = require('shelljs');
 var path = require('path');
 var bodyParser = require('body-parser');
+var extend = require('extend')
 
 var probe = pmx.probe();
 var queue = async.queue((task, callback)=> {
@@ -169,7 +170,7 @@ function start(ctx, cb) {
 
     var name = ctx.port + '-' + ctx.branch;
 
-    config = Object.assign({}, {
+    config = extend(true, {}, {
       script: `./bin/www`,
       env: {}
     }, config.pm2 || {}, {
@@ -184,6 +185,8 @@ function start(ctx, cb) {
         BRANCHOFF_NAME: ctx.id
       }
     });
+
+    console.log(config);
 
     pm2.delete(name, () => {
       pm2.start(config, err => {

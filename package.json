@@ -6,6 +6,7 @@
   "dependencies": {
     "async": "^1.5.2",
     "express": "^4.13.4",
+    "extend": "^3.0.0",
     "github-webhook-handler": "git://github.com/bluejamesbond/github-webhook-handler",
     "jade": "^1.11.0",
     "pm2": "latest",
