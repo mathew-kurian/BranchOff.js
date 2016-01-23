@@ -14,13 +14,18 @@ script.
     for (var c in contexts) {
       var context = contexts[c];
       var row = document.createElement('div');
-      row.innerHTML = '<form method="post" action="destroy">' +
+      row.innerHTML = '<form method="post" action="destroy" style="display:inline;margin:0;">' +
               '<i>' + context.uri + '</i>#' +
               '<b>' + context.branch + '</b> →' +
               '<code>' + context.port + '</code>: ' +
               '<input type="hidden" name="uri" value="' + context.uri + '"/>' +
               '<input type="hidden" name="branch" value="' + context.branch + '" />' +
               '<button type="submit">DESTROY</button>' +
+              '</form>' + ' <form method="post" action="deploy"style="display:inline;margin:0;">' +
+              '<input type="hidden" name="uri" value="' + context.uri + '"/>' +
+              '<input type="hidden" name="branch" value="' + context.branch + '" />' +
+              '<input type="hidden" name="update" value="true" />' +
+              '<button type="submit">FORCE UPDATE</button>' +
               '</form>';
       frag.appendChild(row);
     }

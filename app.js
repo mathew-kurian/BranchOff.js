@@ -203,12 +203,17 @@ function start(ctx, cb) {
   });
 }
 
-function jumpstart(ctx) {
-  console.log('Jumpstart ' + ctx.id + '...');
+function jumpstart(ctx, pull) {
+  console.log('Jumpstart ' + ctx.id + ' - ' + pull);
 
   defer(() => create(ctx));
   defer(() => trigger(ctx, 'create'));
-  defer(() => trigger(ctx, 'push'));
+
+  if (pull) {
+    defer(() => update(ctx));
+    defer(() => trigger(ctx, 'push'));
+  }
+
   defer(cb => start(ctx, cb));
 }
 
@@ -328,7 +333,8 @@ app.post('/deploy', (req, res)=> {
   branch = decodeURIComponent(branch);
 
   var context = resolve(uri, branch);
-  jumpstart(context);
+  jumpstart(context, req.body.update);
+
   res.redirect('/');
 });
 
