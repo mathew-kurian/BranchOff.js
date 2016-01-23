@@ -21,6 +21,7 @@ $ pm2 install git://github.com/bluejamesbond/BranchOff.js.git
 pm2 conf branch-off:port 5000       # webhook port
 pm2 conf branch-off:start 3000      # port range start
 pm2 conf branch-off:end 4000        # port range end
+pm2 conf branch-off:dir "~/cache"   # working directory
 
 # default branch to start with
 pm2 conf branch-off:default_branch https://github.com/bluejamesbond/BranchOff.js#master 

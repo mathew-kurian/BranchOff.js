@@ -22,7 +22,8 @@
     "port": 5000,
     "start": 3000,
     "end": 4000,
-    "default_repo": ""
+    "default_repo": "",
+    "dir": ""
   },
   "apps": [
     {

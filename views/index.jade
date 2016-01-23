@@ -1,4 +1,5 @@
 div#ecosystem
+hr
 form(method='post',action='deploy')
   input(placeholder='git uri',name='uri')
   input(placeholder='git branch',name='branch')
@@ -15,7 +16,8 @@ script.
       var row = document.createElement('div');
       row.innerHTML = '<form method="post" action="destroy">' +
               '<i>' + context.uri + '</i>#' +
-              '<b>' + context.branch + '</b>' +
+              '<b>' + context.branch + '</b> →' +
+              '<code>' + context.port + '</code>: ' +
               '<input type="hidden" name="uri" value="' + context.uri + '"/>' +
               '<input type="hidden" name="branch" value="' + context.branch + '" />' +
               '<button type="submit">DESTROY</button>' +
