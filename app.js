@@ -8,7 +8,6 @@ var fs = require('fs');
 var shell = require('shelljs');
 var path = require('path');
 
-var filePre = 'branchoff-';
 var probe = pmx.probe();
 var queue = async.queue((task, callback)=> {
   task(callback);
@@ -19,15 +18,11 @@ var handler = Hook({});
 var conf = pmx.initModule({
   widget: {
     type: 'generic',
-    logo: 'http://www.creativetechs.com/iq/tip_images/TerminalApp-Icon.png',
-
     theme: ['#111111', '#1B2228', '#807C7C', '#807C7C'],
-
     el: {
       probes: false,
       actions: false
     },
-
     block: {
       actions: false,
       issues: false,
@@ -36,9 +31,6 @@ var conf = pmx.initModule({
       mem: false,
       main_probes: ['Port', 'Start', 'End']
     }
-
-    // Status
-    // Green / Yellow / Red
   }
 });
 
