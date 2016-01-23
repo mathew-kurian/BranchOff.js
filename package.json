@@ -1,0 +1,30 @@
+{
+  "name": "branch-off",
+  "version": "1.0.0",
+  "description": "Auto branch-deployment with Github webhooks",
+  "main": "app.js",
+  "dependencies": {
+    "pm2": "^1.0.0",
+    "pmx": "beta",
+    "shelljs": "^0.5.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bluejamesbond/BranchOff.js"
+  },
+  "config": {
+    "port": 5000,
+    "start": 3000,
+    "end": 4000,
+    "default_repo": null
+  },
+  "apps": [
+    {
+      "merge_logs": true,
+      "max_memory_restart": "400M",
+      "script": "app.js"
+    }
+  ],
+  "author": "Mathew Kurian",
+  "license": "MIT"
+}

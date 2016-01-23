@@ -1,0 +1,12 @@
+{
+    "startPort": 3000,
+    "endPort": 4000,
+    "uri": "https://github.com/bluejamesbond/BranchOff.js",
+    "debug": true,
+    "pm2": {
+        "script": "./test.js",
+        "env": {
+            "NODE_ENV": "staging"
+        }
+    }
+}

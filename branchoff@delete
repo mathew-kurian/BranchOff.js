@@ -1,0 +1,1 @@
+echo "invoked when branch is deleted"
