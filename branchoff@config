@@ -1,12 +1,56 @@
 {
-    "startPort": 3000,
-    "endPort": 4000,
-    "uri": "https://github.com/bluejamesbond/BranchOff.js",
-    "debug": true,
-    "pm2": {
-        "script": "./test.js",
-        "env": {
-            "NODE_ENV": "staging"
-        }
+  "main": "node ./test.js",
+  "preferPort": {
+    "branch": {
+      "master#release": 7000,
+      "master#stage": 7001
     }
+  },
+  "env": {
+    "default": {
+      "NODE_ENV": "staging"
+    },
+    "create": {
+    },
+    "destroy": {
+    },
+    "fail": {
+    },
+    "pass": {
+    },
+    "update": {
+    },
+    "test": {
+    },
+    "mode": {
+      "release": {
+        "MODE": "default"
+      },
+      "release@create": {
+        "FOO": "BAR"
+      },
+      "stage": {
+        "MODE": "stage"
+      }
+    },
+    "branch": {
+      "master": {
+        "IS_MASTER": true
+      },
+      "master#stage": {
+        "FOOTOO": "BARTOO"
+      }
+    }
+  },
+  "pm2": {
+    "script": "./test.js",
+    "restart_delay": 10000,
+    "watch": false,
+    "min_uptime": "20s",
+    "max_restarts": 3,
+    "max_memory_restart": "1G",
+    "env": {
+      "YOLO": "TOAST"
+    }
+  }
 }

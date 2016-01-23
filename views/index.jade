@@ -1,0 +1,41 @@
+doctype html5
+
+html(lang='en')
+  head
+    title BranchOff
+    meta(charset='utf8')
+    meta(name="viewport" content="width=device-width, initial-scale=1")
+    include styles.jade
+    include splitpane.jade
+  body(style='height:100%;')
+    #dashboard.split-pane.fixed-top
+      .split-pane-component#top
+        iframe.full(src="/ecosystem")
+      #divider.split-pane-divider
+      .split-pane-component#bottom
+        iframe.full(src="/scribe/viewer?hideHeader=true")
+  style.
+    .split-pane-divider {
+      border-top: 1px solid #333;
+      border-bottom: 1px solid #333;
+      background: #111;
+    }
+
+    #top {
+      height: 20em;
+      min-height: 5em;
+    }
+
+    #divider {
+      top: 20em;
+      height: 4px;
+    }
+
+    #bottom {
+      top: 20em;
+      margin-top: 4px;
+      min-height: 5em;
+    }
+  script.
+    var s = new SplitPane(document.getElementById('dashboard'));
+    s.bind();

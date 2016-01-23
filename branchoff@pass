@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+
+echo "invoked for pass"
+
+code=$1
+output=$2
+
+echo "Output: $code $output"
