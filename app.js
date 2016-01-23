@@ -56,7 +56,7 @@ function defer(action) {
 }
 
 function ecosystem(system) {
-  var ecofile = path.join(__dirname, '/../ecosystem.json');
+  var ecofile = path.join(__dirname, '/ecosystem.json');
   if (!arguments.length && !system) {
     try {
       system = JSON.parse(fs.readFileSync(ecofile, {encoding: 'utf8'}));
@@ -97,7 +97,7 @@ function resolve(uri, branch) {
     break;
   }
 
-  var cwd = path.join(__dirname, '/../repos');
+  var cwd = path.join(__dirname, '/repos'); // to root ~/.pm2
   var dir = path.join(cwd, folder);
   var context = {uri: uri, cwd: cwd, id: folder, folder: folder, dir: dir, branch: branch, port: port};
 
