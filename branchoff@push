@@ -1,1 +1,2 @@
+npm install
 echo "invoked by github push"

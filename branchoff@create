@@ -1,1 +1,2 @@
+npm install
 echo "invoked when branch is cloned"
