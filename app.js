@@ -262,8 +262,8 @@ function handleGitEvent(event, payload) {
     case "push":
       defer(()=> update(ctx));
     default:
-      defer(cb => start(ctx, cb));
       defer(()=> trigger(ctx, event));
+      defer(cb => start(ctx, cb));
       break;
     case "destroy":
       defer(()=> trigger(ctx, event));
