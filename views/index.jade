@@ -1,0 +1,27 @@
+div#ecosystem
+form(method='post',action='deploy')
+  input(placeholder='git uri',name='uri')
+  input(placeholder='git branch',name='branch')
+  button(type='submit') DEPLOY
+
+script.
+  fetch('http://localhost:4000/', {method:'post'})
+          .then(function (res) {
+            return res.json();
+          }).then(function (contexts) {
+    var frag = document.createDocumentFragment();
+    for (var c in contexts) {
+      var context = contexts[c];
+      var row = document.createElement('div');
+      row.innerHTML = '<form method="post" action="destroy">' +
+              '<i>' + context.uri + '</i>' +
+              '<b>' + context.branch + '</b>' +
+              '<input type="hidden" name="uri" value="' + context.uri + '"/>' +
+              '<input type="hidden" name="branch" value="' + context.branch + '" />' +
+              '<button type="submit">DESTROY</button>' +
+              '</form>';
+      frag.appendChild(row);
+    }
+
+    document.getElementById('ecosystem').appendChild(frag);
+  });

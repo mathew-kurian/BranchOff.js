@@ -7,6 +7,7 @@ var pm2 = require('pm2');
 var fs = require('fs');
 var shell = require('shelljs');
 var path = require('path');
+var bodyParser = require('body-parser');
 
 var probe = pmx.probe();
 var queue = async.queue((task, callback)=> {
@@ -279,11 +280,51 @@ Object.keys(events).forEach(e=> {
 
 handler.on('error', err=> console.error('Error:', err.message));
 
-app.post('/github/postreceive', handler);
-
 app.get('/test', (req, res)=> res.send({ok: true}));
 
-app.get('/ecosystem', (req, res)=>res.json(ecosystem()));
+app.post('/github/postreceive', handler);
+
+app.set('view engine', 'jade');
+
+app.use(bodyParser.urlencoded({ extended: false }))
+app.use(bodyParser.json());
+
+app.post('/', (req, res)=> res.json(ecosystem()));
+
+app.get('/', (req, res)=>{
+  res.render('index');
+});
+
+app.post('/destroy', (req, res)=> {
+  var uri = req.body.uri;
+  var branch = req.body.branch || 'master';
+
+  if (!uri || !branch) {
+    throw new Error('Uri, branch not provided');
+  }
+
+  uri = decodeURI(uri);
+  branch = decodeURIComponent(branch);
+
+  var context = resolve(uri, branch);
+  destroy(context, ()=> res.redirect('/'));
+});
+
+app.post('/deploy', (req, res)=> {
+  var uri = req.body.uri;
+  var branch = req.body.branch || 'master';
+
+  if (!uri || !branch) {
+    throw new Error('Uri, branch not provided');
+  }
+
+  uri = decodeURI(uri);
+  branch = decodeURIComponent(branch);
+
+  var context = resolve(uri, branch);
+  jumpstart(context);
+  res.redirect('/');
+});
 
 app.listen(conf.port, ()=> console.log('Listening to port ' + conf.port));
 

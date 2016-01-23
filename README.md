@@ -29,5 +29,11 @@ pm2 conf branch-off:default_branch https://github.com/bluejamesbond/BranchOff.js
 ### Webhook
 ```
 POST http://<host>:<port>/github/postreceive  # webhook
-GET  http://<host>:<port>/ecosystem           # running ecosystem
+POST http://<host>:<port>/                   # running ecosystem
+GET  http://<host>:<port>/                    # visual ecosystem
+
+# deploy a uri, branch; 
+# e.g. http://localhost:4000/deploy?uri=https://github.com/bluejamesbond/BranchOff.js&branch=Yolocat
+POST  http://<host>:<port>/deploy?uri=<uri>&branch=<branch>       # deploy
+POST  http://<host>:<port>/destory?uri=<uri>&branch=<branch>      # destroy        
 ```
