@@ -111,7 +111,7 @@ function resolve(uri, branch) {
 }
 
 function trigger(ctx, event) {
-  var execScript = ['cd ', ctx.dir, '&&', '.', '/branchoff@' + event].join(' ');
+  var execScript = ['cd ', ctx.dir, '&&', '.', './branchoff@' + event].join(' ');
   console.log(execScript);
   return exec(execScript).split('\n');
 }
