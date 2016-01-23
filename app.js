@@ -131,6 +131,8 @@ function create(ctx) {
 function update(ctx) {
   var pull = ["cd", ctx.dir, "&& git config credential.helper store && git pull"].join(" ");
 
+  console.log(pull);
+
   exec(pull);
 }
 
@@ -256,7 +258,7 @@ function handleGitEvent(event, payload) {
     throw Error('Unable to resolve uri and branch');
   }
 
-  console.log(uri, branch);
+  console.log(event, uri, branch);
 
   var ctx = resolve(uri, branch);
 
