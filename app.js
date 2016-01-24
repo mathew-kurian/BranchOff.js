@@ -128,8 +128,14 @@ function create(ctx) {
   return /(exists)/.test(exec(clone));
 }
 
-function update(ctx) {
-  var pull = ["cd", ctx.dir, "&& git config credential.helper store && git pull"].join(" ");
+function update(ctx, forced) {
+  var pull = ["cd", ctx.dir, "&& git config credential.helper store && git pull"];
+
+  if (forced){
+    pull = pull.concat('-f');
+  }
+
+  pull = pull.join(' ');
 
   console.log(pull);
 
@@ -210,7 +216,7 @@ function jumpstart(ctx, pull) {
   defer(() => trigger(ctx, 'create'));
 
   if (pull) {
-    defer(() => update(ctx));
+    defer(() => update(ctx, true));
     defer(() => trigger(ctx, 'push'));
   }
 
@@ -272,7 +278,7 @@ function handleGitEvent(event, payload) {
       defer(()=> create(ctx));
     case "pull_request":
     case "push":
-      defer(()=> update(ctx));
+      defer(()=> update(ctx, !!payload.forced));
     default:
       defer(()=> trigger(ctx, event));
       defer(cb => start(ctx, cb));
