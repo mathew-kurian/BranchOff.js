@@ -36,15 +36,11 @@ style.
     border-radius: 100px;
     letter-spacing: 1px;
     font-size: 12px;
-    margin-right: 10px;
     color: #fff;
     outline: none;
     vertical-align: top;
     display: inline-block;
-  }
-
-  input:last-child {
-    margin: 0;
+    width: 100%;
   }
 
   .scale {
@@ -83,6 +79,7 @@ style.
     text-overflow: ellipsis;
     font-size: 14px;
     font-weight: bold;
+    padding-right: 8px;
   }
 
   .tag {
@@ -95,6 +92,10 @@ style.
     border-radius: 2px;
     margin-right: 4px;
     letter-spacing: 1px;
+    margin-bottom: 4px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
   }
 
   .branch {
@@ -246,8 +247,21 @@ style.
   }
 
   input.crush {
-    width: 60px;
+    width: 50px;
     padding: 10px 0;
     overflow: hidden;
     text-align: center;
+  }
+
+  @media (max-width: 400px) {
+    .scale, .uri {
+      display: none;
+    }
+
+    .description {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding-right: 10px;
+    }
   }

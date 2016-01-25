@@ -8,7 +8,7 @@ html(lang='en')
     include styles.jade
   body.flex.vertical(style='height:100%;')
     form.header.flex(method='post',action='/deploy')
-      input.box(placeholder='GIT URI',name='uri')
+      input.box(placeholder='GIT URI',name='uri',style="margin-right:10px;")
       input.box(placeholder='BRANCH',name='branch')
       button(type='submit',style='color:#00FF6A') 
     div(style='overflow:scroll;')
