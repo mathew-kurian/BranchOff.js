@@ -122,8 +122,6 @@ function resolve(uri, branch, scale) {
   var port = start;
   var context;
 
-  scale = Math.min(Math.abs(isNaN(parseInt(scale)) ? 1 : scale), os.cpus().length);
-
   if (system[id]) {
     context = system[id]; // return the context
   } else {
@@ -144,6 +142,12 @@ function resolve(uri, branch, scale) {
 
     context = {uri: uri, cwd: cwd, id: folder, folder: folder, dir: dir, branch: branch, port: port};
 
+  }
+
+  if (arguments.length == 2) {
+    scale = context.scale || 1;
+  } else {
+    scale = Math.min(Math.abs(isNaN(parseInt(scale)) ? 1 : scale), os.cpus().length);
   }
 
   context.scale = scale;
