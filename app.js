@@ -254,7 +254,7 @@ function start(ctx, cb) {
 }
 
 function jumpstart(ctx, repoExists) {
-  console.log('Jumpstart ' + ctx.id + ' - ' + pull);
+  console.log('Jumpstart ' + ctx.id + ' - repoExists:' + repoExists);
 
 
   if (repoExists) {
