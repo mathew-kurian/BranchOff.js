@@ -253,7 +253,7 @@ function start(ctx, cb) {
   });
 }
 
-function jumpstart(ctx, pull, req) {
+function jumpstart(ctx, pull) {
   console.log('Jumpstart ' + ctx.id + ' - ' + pull);
 
   defer(cb => create(ctx, cb));

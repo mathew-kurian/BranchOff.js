@@ -26,6 +26,7 @@ html(lang='en')
               input.crush(onkeypress='return event.charCode >= 48 && event.charCode <= 57' name="scale",value=(system.scale || 1),placeholder='1')
               input(name="uri",type='hidden',value=system.uri)
               input(name="branch",type='hidden',value=system.branch)
+              input(name="update",type='hidden',value="true")
               button(type='submit',style='color:#888',onclick="this.className='rotate';") 
             form.destroy(method='post',action='/destroy')
               input(name="uri",type='hidden',value=system.uri)
