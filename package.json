@@ -1,6 +1,6 @@
 {
   "name": "branch-off",
-  "version": "1.12.0",
+  "version": "1.13.0",
   "description": "Auto branch-deployment with Github webhooks",
   "main": "app.js",
   "dependencies": {
@@ -12,6 +12,7 @@
     "jade": "^1.11.0",
     "pm2": "latest",
     "pmx": "beta",
+    "scribe-js": "git://github.com/bluejamesbond/Scribe.js.git#dev",
     "shelljs": "^0.5.3"
   },
   "repository": {
@@ -20,6 +21,7 @@
   },
   "config": {
     "port": 5000,
+    "socketPort": 5999,
     "start": 3000,
     "end": 4000,
     "default_repo": "",

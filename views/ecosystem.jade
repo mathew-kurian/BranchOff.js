@@ -1,0 +1,37 @@
+doctype html5
+
+html(lang='en')
+  head
+    title BranchOff - Ecosystem
+    meta(charset='utf8')
+    meta(name="viewport" content="width=device-width, initial-scale=1")
+    include styles.jade
+  body.flex.vertical(style='height:100%;')
+    form.header.flex(method='post',action='/deploy')
+      input.box(placeholder='GIT URI',name='uri')
+      input.box(placeholder='BRANCH',name='branch')
+      button(type='submit',style='color:#00FF6A') 
+    div(style='overflow:scroll;')
+      - var i = 0
+      each system in ecosystem
+        - i++
+        .system.flex
+          .description.box(style='flex:1')
+            .uri=system.uri
+            .tag.branch=system.branch
+            .tag.port=system.port
+          div
+            form.update(method='post',action='/deploy')
+              .scale SCALE
+              input.crush(onkeypress='return event.charCode >= 48 && event.charCode <= 57' name="scale",value=(system.scale || 1),placeholder='1')
+              input(name="uri",type='hidden',value=system.uri)
+              input(name="branch",type='hidden',value=system.branch)
+              button(type='submit',style='color:#888',onclick="this.className='rotate';") 
+            form.destroy(method='post',action='/destroy')
+              input(name="uri",type='hidden',value=system.uri)
+              input(name="branch",type='hidden',value=system.branch)
+              button(type='submit',style='color:#FF4949',onclick="this.className='pulsate';") 
+            a(id='link-#{i}',type='submit', target="_blank" style='color:#FFF') 
+            script.
+              document.getElementById('link-#{i}').href = window.location.protocol + '//' +
+                      window.location.hostname + ':' + #{system.port};

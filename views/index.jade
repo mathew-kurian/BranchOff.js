@@ -1,34 +1,41 @@
-div#ecosystem
-hr
-form(method='post',action='deploy')
-  input(placeholder='git uri',name='uri')
-  input(placeholder='git branch',name='branch')
-  button(type='submit') DEPLOY
+doctype html5
 
-script.
-  fetch('/', {method:'post'})
-          .then(function (res) {
-            return res.json();
-          }).then(function (contexts) {
-    var frag = document.createDocumentFragment();
-    for (var c in contexts) {
-      var context = contexts[c];
-      var row = document.createElement('div');
-      row.innerHTML = '<form method="post" action="destroy" style="display:inline;margin:0;">' +
-              '<i>' + context.uri + '</i>#' +
-              '<b>' + context.branch + '</b> →' +
-              '<code>' + context.port + '</code>: ' +
-              '<input type="hidden" name="uri" value="' + context.uri + '"/>' +
-              '<input type="hidden" name="branch" value="' + context.branch + '" />' +
-              '<button type="submit">DESTROY</button>' +
-              '</form>' + ' <form method="post" action="deploy"style="display:inline;margin:0;">' +
-              '<input type="hidden" name="uri" value="' + context.uri + '"/>' +
-              '<input type="hidden" name="branch" value="' + context.branch + '" />' +
-              '<input type="hidden" name="update" value="true" />' +
-              '<button type="submit">FORCE UPDATE</button>' +
-              '</form>';
-      frag.appendChild(row);
+html(lang='en')
+  head
+    title BranchOff
+    meta(charset='utf8')
+    meta(name="viewport" content="width=device-width, initial-scale=1")
+    include styles.jade
+    include splitpane.jade
+  body(style='height:100%;')
+    #dashboard.split-pane.fixed-top
+      .split-pane-component#top
+        iframe.full(src="http://localhost:4000/ecosystem")
+      #divider.split-pane-divider
+      .split-pane-component#bottom
+        iframe.full(src="http://localhost:4000/scribe/viewer?hideSidebar=true&hideHeader=true")
+  style.
+    .split-pane-divider {
+      border-top: 1px solid #333;
+      border-bottom: 1px solid #333;
+      background: #111;
     }
 
-    document.getElementById('ecosystem').appendChild(frag);
-  });
+    #top {
+      height: 20em;
+      min-height: 5em;
+    }
+
+    #divider {
+      top: 20em;
+      height: 4px;
+    }
+
+    #bottom {
+      top: 20em;
+      margin-top: 4px;
+      min-height: 5em;
+    }
+  script.
+    var s = new SplitPane(document.getElementById('dashboard'));
+    s.bind();

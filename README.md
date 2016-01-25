@@ -11,7 +11,7 @@ Benefits of auto-deployment for each Git branch in agile development:
 - Supports only Github for now
 
 ### Simple Dashboard
-![](http://imgur.com/ff3IH0r.png)
+![](/screenshots/dashboard-0.png)
  
 ### Setup
 ```bash
@@ -21,6 +21,7 @@ $ pm2 install git://github.com/bluejamesbond/BranchOff.js.git
 ### Options
 ```bash
 pm2 conf branch-off:port 5000       # webhook port
+pm2 conf branch-off:socketPort 5999 # socket port
 pm2 conf branch-off:start 3000      # port range start
 pm2 conf branch-off:end 4000        # port range end
 pm2 conf branch-off:dir "~/cache"   # working directory
@@ -32,11 +33,12 @@ pm2 conf branch-off:default_branch https://github.com/bluejamesbond/BranchOff.js
 ### Webhook
 ```
 POST http://<host>:<port>/github/postreceive  # webhook
-POST http://<host>:<port>/                    # running ecosystem
-GET  http://<host>:<port>/                    # visual ecosystem
+GET  http://<host>:<port>/                    # dashboard
+POST http://<host>:<port>/ecosystem           # ecosystem
+GET  http://<host>:<port>/ecosystem           # visual ecosystem
 
-# deploy a uri, branch; 
-# e.g. http://localhost:4000/deploy?uri=https://github.com/bluejamesbond/BranchOff.js&branch=Yolocat
-POST  http://<host>:<port>/deploy?uri=<uri>&branch=<branch>       # deploy
+# deploy a uri, branch, scale; 
+# e.g. http://localhost:4000/deploy?uri=https://github.com/bluejamesbond/BranchOff.js&branch=Yolocat&scale=1
+POST  http://<host>:<port>/deploy?uri=<uri>&branch=<branch>&scale=<num> # deploy
 POST  http://<host>:<port>/destory?uri=<uri>&branch=<branch>      # destroy        
 ```

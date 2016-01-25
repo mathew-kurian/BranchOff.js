@@ -8,15 +8,10 @@ var fs = require('fs');
 var shell = require('shelljs');
 var path = require('path');
 var bodyParser = require('body-parser');
-var extend = require('extend')
+var extend = require('extend');
+var os = require('os');
+var Scribe = require('scribe-js');
 
-var probe = pmx.probe();
-var queue = async.queue((task, callback)=> {
-  task(callback);
-}, 1);
-
-var app = express();
-var handler = Hook({});
 var conf = pmx.initModule({
   widget: {
     type: 'generic',
@@ -35,23 +30,68 @@ var conf = pmx.initModule({
     }
   }
 });
+var console = new Scribe(process.pid, {
+  name: 'BranchOff',
+  mongo: false,
+  publicUri: 'http://localhost',
+  basePath: 'scribe/',
+  socketPort: conf.socketPort,
+  web: {
+    router: {
+      username: 'build',
+      password: 'build',
+      authentication: false,
+      sessionSecret: 'scribe-session',
+      useBodyParser: true,
+      useSession: true
+    },
+    client: {
+      port: 5000,
+      socketPorts: [conf.socketPort],
+      exposed: {
+        all: {label: 'all', query: {expose: {$exists: true}}},
+        error: {label: 'error', query: {expose: 'error'}},
+        express: {label: 'express', query: {expose: 'express'}},
+        info: {label: 'info', query: {expose: 'info'}},
+        log: {label: 'log', query: {expose: 'log'}},
+        warn: {label: 'warn', query: {expose: 'warn'}},
+        trace: {label: 'trace', query: {expose: 'trace'}},
+        timing: {label: 'time', query: {expose: 'timing'}},
+        user: {label: 'user', query: {'transient.tags': {$in: ['USER ID']}}}
+      }
+    }
+  },
+  native: {},
+  debug: false
+});
+
+var probe = pmx.probe();
+var queue = async.queue((task, callback)=> {
+  if (task.length) {
+    task(callback);
+  } else {
+    task();
+    callback();
+  }
+}, 1);
+
+var defer = queue.push.bind(queue);
+
+var app = express();
+var handler = Hook({});
 
 probe.metric({name: 'Port', value: ()=> conf.port});
 probe.metric({name: 'Start', value: ()=> conf.start});
 probe.metric({name: 'End', value: ()=> conf.end});
 
-function exec(p) {
-  return shell.exec(p, {silent: false}).output.trim();
-}
+function exec(p, cb) {
+  console.info(p);
 
-function defer(action) {
-  queue.push(callback => {
-    if (action.length) {
-      action(callback);
-    } else {
-      action();
-      callback();
-    }
+  return shell.exec(p, (code, stdout, stderr)=> {
+    console.info(code);
+    if (stdout) console.log(stdout);
+    if (stderr) console.error(stderr);
+    cb();
   });
 }
 
@@ -74,72 +114,69 @@ function ecosystem(system) {
   }
 }
 
-function resolve(uri, branch) {
+function resolve(uri, branch, scale) {
   var system = ecosystem();
   var folder = (uri + branch).replace(/[^a-zA-Z0-9\-]/g, '');
   var id = folder;
   var start = conf.start;
   var end = conf.end;
   var port = start;
+  var context;
+
+  scale = Math.min(Math.abs(isNaN(parseInt(scale)) ? 1 : scale), os.cpus().length);
 
   if (system[id]) {
-    return system[id]; // return the context
-  }
+    context = system[id]; // return the context
+  } else {
 
-  nextPort: for (var i = start; i < end; i++) {
-    for (var m in system) {
-      if (system.hasOwnProperty(m) && system[m].port === i) {
-        continue nextPort;
+    nextPort: for (var i = start; i < end; i++) {
+      for (var m in system) {
+        if (system.hasOwnProperty(m) && system[m].port === i) {
+          continue nextPort;
+        }
       }
+
+      port = i;
+      break;
     }
 
-    port = i;
-    break;
+    var cwd = conf.dir || path.join(__dirname, '/../../repos'); // to root ~/.pm2
+    var dir = path.join(cwd, folder);
+
+    context = {uri: uri, cwd: cwd, id: folder, folder: folder, dir: dir, branch: branch, port: port};
+
   }
 
-  var cwd = conf.dir || path.join(__dirname, '/../../repos'); // to root ~/.pm2
-  var dir = path.join(cwd, folder);
-  var context = {uri: uri, cwd: cwd, id: folder, folder: folder, dir: dir, branch: branch, port: port};
+  context.scale = scale;
 
   system[id] = context;
-
-  console.log(context);
 
   ecosystem(system);
 
   return context;
 }
 
-function trigger(ctx, event) {
-  var execScript = ['cd ', ctx.dir, '&&', '.', './branchoff@' + event].join(' ');
-  console.log(execScript);
-  return exec(execScript).split('\n');
+function trigger(ctx, event, cb) {
+  var runScript = ['cd ', ctx.dir, '&&', '.', './branchoff@' + event].join(' ');
+  exec(runScript, cb);
 }
 
-function create(ctx) {
+function create(ctx, cb) {
   var createDir = ["mkdir -p", ctx.cwd].join(" ");
   var clone = ["cd", ctx.cwd, "&& git config --global credential.helper store && git clone --branch=" + ctx.branch,
     ctx.uri, ctx.dir].join(" ");
 
-  exec(createDir);
-
-  console.log(clone);
-
-  return /(exists)/.test(exec(clone));
+  exec([createDir, clone].join(' && '), cb);
 }
 
-function update(ctx, forced) {
-  var pull = ["cd", ctx.dir, "&& git config credential.helper store && git pull"];
+function update(ctx, forced, cb) {
+  var pull = ["cd", ctx.dir, "&& git config credential.helper store && git pull"].join(" ");
 
-  if (forced){
-    pull = pull.concat('-f');
+  if (forced) {
+    pull += ' -f';
   }
 
-  pull = pull.join(' ');
-
-  console.log(pull);
-
-  exec(pull);
+  exec(pull, cb);
 }
 
 function destroy(ctx, cb) {
@@ -150,7 +187,7 @@ function destroy(ctx, cb) {
   ecosystem(system);
 
   var removeDir = ["rm -rf", ctx.dir].join(" ");
-  exec(removeDir);
+  exec(removeDir, ()=>0);
 
   pm2.connect(function (err) {
     if (err) return console.error(err) || cb(err);
@@ -195,6 +232,14 @@ function start(ctx, cb) {
       }
     });
 
+    var exec_mode = config.exec_mode || 'cluster';
+    var instances = config.instances || ctx.scale;
+
+    config = extend(true, config, {
+      exec_mode: exec_mode,
+      instances: instances
+    });
+
     console.log(config);
 
     pm2.delete(name, () => {
@@ -202,22 +247,22 @@ function start(ctx, cb) {
         if (err) return console.error(err) || cb(err);
         pm2.disconnect();
         if (err) return console.error(err) || cb(err);
-        console.log("Started process");
+        console.log("Started process: " + name);
         cb();
       });
     });
   });
 }
 
-function jumpstart(ctx, pull) {
+function jumpstart(ctx, pull, req) {
   console.log('Jumpstart ' + ctx.id + ' - ' + pull);
 
-  defer(() => create(ctx));
-  defer(() => trigger(ctx, 'create'));
+  defer(cb => create(ctx, cb));
+  defer(cb => trigger(ctx, 'create', cb));
 
   if (pull) {
-    defer(() => update(ctx, true));
-    defer(() => trigger(ctx, 'push'));
+    defer(cb => update(ctx, true, cb));
+    defer(cb => trigger(ctx, 'push', cb));
   }
 
   defer(cb => start(ctx, cb));
@@ -275,16 +320,16 @@ function handleGitEvent(event, payload) {
 
   switch (event) {
     case "create":
-      defer(()=> create(ctx));
+      defer(cb=> create(ctx, cb));
     case "pull_request":
     case "push":
-      defer(()=> update(ctx, !!payload.forced));
+      defer(cb=> update(ctx, !!payload.forced, cb));
     default:
-      defer(()=> trigger(ctx, event));
+      defer(cb=> trigger(ctx, event, cb));
       defer(cb => start(ctx, cb));
       break;
     case "destroy":
-      defer(()=> trigger(ctx, event));
+      defer(cb=> trigger(ctx, event, cb));
       defer(cb => destroy(ctx, cb));
   }
 }
@@ -297,20 +342,18 @@ Object.keys(events).forEach(e=> {
 
 handler.on('error', err=> console.error('Error:', err.message));
 
+app.use(console.middleware('express'));
+app.use('/scribe', console.viewer());
 app.get('/test', (req, res)=> res.send({ok: true}));
-
 app.post('/github/postreceive', handler);
-
 app.set('view engine', 'jade');
-
-app.use(bodyParser.urlencoded({ extended: false }))
+app.use(bodyParser.urlencoded({extended: false}));
 app.use(bodyParser.json());
-
-app.post('/', (req, res)=> res.json(ecosystem()));
-
-app.get('/', (req, res)=>{
-  res.render('index');
-});
+app.get('/', (req, res)=> res.render('index'));
+app.post('/ecosystem', (req, res)=> res.json(ecosystem()));
+app.get('/ecosystem', (req, res)=> res.render('ecosystem', {ecosystem: ecosystem()}));
+app.get('/destroy', (req, res)=> res.redirect('/'));
+app.get('/deploy', (req, res)=> res.redirect('/'));
 
 app.post('/destroy', (req, res)=> {
   var uri = req.body.uri;
@@ -324,7 +367,9 @@ app.post('/destroy', (req, res)=> {
   branch = decodeURIComponent(branch);
 
   var context = resolve(uri, branch);
-  destroy(context, ()=> res.redirect('/'));
+
+  defer(cb => destroy(context, cb));
+  defer(()=>res.redirect('/ecosystem'));
 });
 
 app.post('/deploy', (req, res)=> {
@@ -338,10 +383,13 @@ app.post('/deploy', (req, res)=> {
   uri = decodeURI(uri);
   branch = decodeURIComponent(branch);
 
-  var context = resolve(uri, branch);
+  var context = resolve(uri, branch, req.body.scale);
+
+  console.log(context);
+
   jumpstart(context, req.body.update);
 
-  res.redirect('/');
+  defer(()=>res.redirect('/ecosystem'));
 });
 
 app.listen(conf.port, ()=> console.log('Listening to port ' + conf.port));
