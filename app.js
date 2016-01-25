@@ -33,7 +33,6 @@ var conf = pmx.initModule({
 var console = new Scribe(process.pid, {
   name: 'BranchOff',
   mongo: false,
-  publicUri: 'http://localhost',
   basePath: 'scribe/',
   socketPort: conf.socketPort,
   web: {
