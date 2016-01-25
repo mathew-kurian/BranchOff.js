@@ -253,15 +253,16 @@ function start(ctx, cb) {
   });
 }
 
-function jumpstart(ctx, pull) {
+function jumpstart(ctx, repoExists) {
   console.log('Jumpstart ' + ctx.id + ' - ' + pull);
 
-  defer(cb => create(ctx, cb));
-  defer(cb => trigger(ctx, 'create', cb));
 
-  if (pull) {
+  if (repoExists) {
     defer(cb => update(ctx, true, cb));
     defer(cb => trigger(ctx, 'push', cb));
+  } else {
+    defer(cb => create(ctx, cb));
+    defer(cb => trigger(ctx, 'create', cb));
   }
 
   defer(cb => start(ctx, cb));
@@ -390,6 +391,7 @@ app.post('/deploy', (req, res)=> {
 
   defer(()=>res.redirect('/ecosystem'));
 });
+
 
 app.listen(conf.port, ()=> console.log('Listening to port ' + conf.port));
 
