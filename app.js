@@ -46,7 +46,7 @@ var console = new Scribe(process.pid, {
       useSession: true
     },
     client: {
-      port: 5000,
+      port: conf.port,
       socketPorts: [conf.socketPort],
       exposed: {
         all: {label: 'all', query: {expose: {$exists: true}}},
