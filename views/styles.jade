@@ -42,6 +42,7 @@ style.
     vertical-align: top;
     display: inline-block;
     width: 100%;
+    min-height: 38px;
   }
 
   .scale {
@@ -240,7 +241,7 @@ style.
     display: inline-block;
     font-size: 11px;
     position: relative;
-    top: -10px;
+    top: -8px;
     letter-spacing: 1px;
   }
 
@@ -257,6 +258,9 @@ style.
     overflow: hidden;
     text-align: center;
     min-width: 0;
+    border-radius: 8px;
+    border: 2px solid #333;
+    background: transparent;
   }
 
   @media (max-width: 400px) {
@@ -269,5 +273,9 @@ style.
       flex-direction: column;
       justify-content: center;
       padding-right: 10px;
+    }
+
+    .tag:last-child {
+      margin-bottom: 0;
     }
   }
