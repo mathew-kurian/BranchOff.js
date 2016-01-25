@@ -10,8 +10,8 @@ html(lang='en')
     form.header.flex(method='post',action='/deploy')
       input.box(placeholder='GIT URI',name='uri',style="margin-right:10px;")
       input.box(placeholder='BRANCH',name='branch')
-      button(type='submit',style='color:#00FF6A') 
-    div(style='overflow:scroll;')
+      button(type='submit',style='color:#00FF6A',onclick="this.className='pulsate';") 
+    .full(style='overflow:scroll;')
       - var i = 0
       each system in ecosystem
         - i++

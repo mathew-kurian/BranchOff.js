@@ -30,6 +30,7 @@ var conf = pmx.initModule({
     }
   }
 });
+
 var console = new Scribe(process.pid, {
   name: 'BranchOff',
   mongo: false,
@@ -86,12 +87,10 @@ probe.metric({name: 'End', value: ()=> conf.end});
 function exec(p, cb) {
   console.info(p);
 
-  return shell.exec(p, (code, stdout, stderr)=> {
-    console.info(code);
-    if (stdout) console.log(stdout);
-    if (stderr) console.error(stderr);
-    cb();
-  });
+  var child = shell.exec(p, {async: true, silent: true});
+  child.stdout.on('data', data => console.log(data));
+  child.stderr.on('data', data => console.error(data));
+  child.on('exit', () => cb());
 }
 
 function ecosystem(system) {
@@ -144,13 +143,15 @@ function resolve(uri, branch, scale) {
 
   }
 
+  var maxInstances = parseInt(isNaN(conf.maxInstances) || conf.maxInstances <= 0 ? os.cpus().length : conf.maxInstances);
+
   if (arguments.length == 2) {
     scale = context.scale || 1;
   } else {
-    scale = Math.min(Math.abs(isNaN(parseInt(scale)) ? 1 : scale), os.cpus().length);
+    scale = Math.abs(parseInt(isNaN(scale) ? 1 : scale));
   }
 
-  context.scale = scale;
+  context.scale = Math.min(scale, maxInstances);
 
   system[id] = context;
 
@@ -166,8 +167,8 @@ function trigger(ctx, event, cb) {
 
 function create(ctx, cb) {
   var createDir = ["mkdir -p", ctx.cwd].join(" ");
-  var clone = ["cd", ctx.cwd, "&& git config --global credential.helper store && git clone --branch=" + ctx.branch,
-    ctx.uri, ctx.dir].join(" ");
+  var clone = ["cd", ctx.cwd, "&& git config --global credential.helper store && git clone -b " + ctx.branch,
+    "--single-branch", ctx.uri, ctx.dir].join(" ");
 
   exec([createDir, clone].join(' && '), cb);
 }
@@ -371,6 +372,8 @@ app.post('/destroy', (req, res)=> {
   branch = decodeURIComponent(branch);
 
   var context = resolve(uri, branch);
+
+  console.log(context);
 
   defer(cb => destroy(context, cb));
   defer(()=>res.redirect('/ecosystem'));
