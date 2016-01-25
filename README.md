@@ -8,7 +8,7 @@ Benefits of auto-deployment for each Git branch in agile development:
  - Allows for shared database
  
 ### Requirements / Limitations
-- Supports only Github for now
+- Webhooks for Github only. Other services coming in the future
 
 ### Simple Dashboard
 ![](/screenshots/dashboard-0.png)
