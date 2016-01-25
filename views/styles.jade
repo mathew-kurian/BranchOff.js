@@ -16,11 +16,20 @@ style.
     font-family: 'Open Sans', sans-serif;
   }
 
+  * {
+    box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+  }
+
   .header {
     margin: 0;
     padding: 20px;
     background: #111;
     border-bottom: 1px solid #222;
+    height: 78px;
+    min-height: 78px;
+    max-height: 78px;
   }
 
   form {
@@ -152,6 +161,17 @@ style.
     -webkit-box-pack: center;
     -webkit-justify-content: center;
     justify-content: center;
+  }
+
+  .flex.left {
+    -webkit-box-align: start;
+    -webkit-align-items: flex-start;
+    -ms-grid-row-align: start;
+    align-items: left;
+    -webkit-box-pack: start;
+    -webkit-justify-content: flex-start;
+    justify-content: flex-start;
+
   }
 
   .flex.center > .centered {

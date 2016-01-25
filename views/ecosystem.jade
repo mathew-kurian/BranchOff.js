@@ -16,11 +16,12 @@ html(lang='en')
       each system in ecosystem
         - i++
         .system.flex
-          .description.box(style='flex:1')
-            .uri=system.uri
-            .tag.branch=system.branch
-            .tag.port=system.port
-          div
+          .flex.left.box(style='flex:1')
+            .description(style='width:100%')
+              .uri=system.uri
+              .tag.branch=system.branch
+              .tag.port=system.port
+          .flex.center
             form.update(method='post',action='/deploy')
               .scale SCALE
               input.crush(onkeypress='return event.charCode >= 48 && event.charCode <= 57' name="scale",value=(system.scale || 1),placeholder='1')
