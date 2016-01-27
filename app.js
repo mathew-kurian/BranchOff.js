@@ -174,7 +174,7 @@ function create(ctx, cb) {
 }
 
 function update(ctx, forced, cb) {
-  var pull = ["cd", ctx.dir, "&& git config credential.helper store && git pull"].join(" ");
+  var pull = ["cd", ctx.dir, "&& git config credential.helper store && git reset --hard && git pull"].join(" ");
 
   if (forced) {
     pull += ' -f';
