@@ -75,7 +75,15 @@ var queue = async.queue((task, callback)=> {
   }
 }, 1);
 
-var defer = queue.push.bind(queue);
+queue.drain = function () {
+  console.log('all items have been processed');
+};
+
+
+var defer = task => {
+  queue.push(task);
+  console.log('Running tasks', queue.length());
+};
 
 var app = express();
 var handler = Hook({});
@@ -194,9 +202,15 @@ function destroy(ctx, cb) {
   exec(removeDir, ()=>0);
 
   pm2.connect(function (err) {
-    if (err) return console.error(err) || cb(err);
+    if (err) {
+      console.error(err);
+      return cb(err);
+    }
     pm2.delete(name, err => {
-      if (err) return console.error(err) || cb(err);
+      if (err) {
+        console.error(err);
+        return cb(err);
+      }
       cb();
     });
   });
@@ -247,10 +261,17 @@ function start(ctx, cb) {
     console.log(config);
 
     pm2.delete(name, () => {
+      console.log('PM2 delete');
       pm2.start(config, err => {
-        if (err) return console.error(err) || cb(err);
+        if (err) {
+          console.error(err);
+          return cb(err);
+        }
         pm2.disconnect();
-        if (err) return console.error(err) || cb(err);
+        if (err) {
+          console.error(err);
+          return cb(err);
+        }
         console.log("Started process: " + name);
         cb();
       });
@@ -260,7 +281,6 @@ function start(ctx, cb) {
 
 function jumpstart(ctx, repoExists) {
   console.log('Jumpstart ' + ctx.id + ' - repoExists:' + repoExists);
-
 
   if (repoExists) {
     defer(cb => update(ctx, true, cb));
