@@ -98,7 +98,7 @@ function exec(p, cb, args) {
   }
 
   var out = '';
-  var child = shell.exec(p + args.join(' '), {async: true, silent: true});
+  var child = shell.exec(p + ' ' + args.join(' '), {async: true, silent: true});
   child.stdout.on('data', data => {
     console.tag('exec').log(data);
     out += data;
