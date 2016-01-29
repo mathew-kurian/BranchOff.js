@@ -89,7 +89,7 @@ var Pipeline = {
 
         console.tag('update').log('Tests passed! Deploying actual branch');
 
-        defer(cb=> core.update(ctx, true, cb));
+        defer(cb=> core.update(ctx, cb));
         defer(cb=> core.trigger(ctx, 'update', cb));
         defer(cb=> core.trigger(ctx, 'push', cb)); // deprecated
         defer(cb => core.start(ctx, cb));
