@@ -87,7 +87,10 @@ var defer = task => {
   console.tag('queue').log('Deferred tasks', queue.length());
 };
 
-function exec(p, cb) {
+function exec(p, cb, args) {
+  args = args || [];
+  args = Array.isArray(args) ? args : [args];
+
   console.tag('exec').info(p);
 
   if (cb === true) {
@@ -95,14 +98,14 @@ function exec(p, cb) {
   }
 
   var out = '';
-  var child = shell.exec(p, {async: true, silent: true});
+  var child = shell.exec(p + args.join(' '), {async: true, silent: true});
   child.stdout.on('data', data => {
     console.tag('exec').log(data);
     out += data;
   });
 
   child.stderr.on('data', data => {
-    console.tag('exec').error(data);
+    console.tag('exec').log(data);
     out += data;
   });
 
@@ -175,7 +178,7 @@ function resolve(uri, branch, opts) {
   return context;
 }
 
-function trigger(ctx, event, cb) {
+function trigger(ctx, event, cb, args) {
   var fp = path.join(ctx.dir, 'branchoff@' + event);
 
   console.tag('trigger').log(fp);
@@ -183,7 +186,7 @@ function trigger(ctx, event, cb) {
   try {
     if (fs.statSync(fp)) {
       var runScript = ['cd ', ctx.dir, '&&', '.', './branchoff@' + event].join(' ');
-      return exec(runScript, cb);
+      return exec(runScript, cb, args);
     }
   } catch (e) {
     var res = {code: 0, output: 'No file'};

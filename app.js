@@ -15,6 +15,8 @@ var conf = core.conf;
 // update: <clone{test}, test, start, fail> OR <clone{test}, test, start, ok, pull, start>
 var Pipeline = {
   restore: function (then, opts) {
+    var self = this;
+
     opts = opts || {};
 
     var system = core.ecosystem();
@@ -24,7 +26,7 @@ var Pipeline = {
           console.tag('jumpstart', id).log(ctx, opts);
 
           if (ctx.mode === 'test') {
-            this.destroy(ctx.uri, ctx.branch, null, ctx);
+            self.destroy(ctx.uri, ctx.branch, null, ctx);
           } else {
             defer(cb => core.create(ctx, cb));
             defer(cb => core.trigger(ctx, 'create', cb));
@@ -61,14 +63,14 @@ var Pipeline = {
     console.tag('test').log(ctx, opts);
 
     defer(cb=> core.create(ctx, cb));
-    defer(cb=> core.trigger(ctx, 'create', cb));
+    defer(cb=> core.trigger(ctx, 'create', cb, [ctx.mode]));
     defer(cb => core.start(ctx, cb));
     defer(cb=> core.trigger(ctx, 'test', (code, output)=> {
       console.tag('test').log({code: code, output: output});
-      console.tag('test').log(core.trigger(ctx, code ? 'fail' : 'ok', true, JSON.stringify({
+      console.tag('test').log(core.trigger(ctx, code ? 'fail' : 'ok', true, [JSON.stringify({
         code: code,
         output: output
-      })));
+      })]));
 
       this.destroy(ctx.uri, ctx.branch, null, ctx);
       cb();
@@ -89,6 +91,7 @@ var Pipeline = {
 
         defer(cb=> core.update(ctx, true, cb));
         defer(cb=> core.trigger(ctx, 'update', cb));
+        defer(cb=> core.trigger(ctx, 'push', cb)); // deprecated
         defer(cb => core.start(ctx, cb));
       }
 
