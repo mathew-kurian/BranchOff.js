@@ -21,6 +21,8 @@ html(lang='en')
               .uri=system.uri
               .tag.branch=system.branch
               .tag.port=system.port
+              if system.mode
+                .tag=system.mode
           .flex.center
             form.update(method='post',action='/deploy')
               .scale SCALE
@@ -28,12 +30,15 @@ html(lang='en')
               input(name="uri",type='hidden',value=system.uri)
               input(name="branch",type='hidden',value=system.branch)
               input(name="update",type='hidden',value="true")
+              input(name="mode",type='hidden',value=system.mode)
               button(type='submit',style='color:#9E9E9E',onclick="this.className='rotate';") 
             form.destroy(method='post',action='/destroy')
               input(name="uri",type='hidden',value=system.uri)
               input(name="branch",type='hidden',value=system.branch)
+              input(name="mode",type='hidden',value=system.mode)
               button(type='submit',style='color:#FF4949',onclick="this.className='pulsate';") 
             a(id='link-#{i}',type='submit', target="_blank" style='color:#FFF') 
             script.
               document.getElementById('link-#{i}').href = window.location.protocol + '//' +
                       window.location.hostname + ':' + #{system.port};
+
