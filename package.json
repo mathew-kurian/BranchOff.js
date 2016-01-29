@@ -1,6 +1,6 @@
 {
   "name": "branch-off",
-  "version": "1.26.0",
+  "version": "1.27.0",
   "description": "Auto branch-deployment with Github webhooks",
   "main": "app.js",
   "dependencies": {
