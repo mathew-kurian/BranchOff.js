@@ -1,2 +1,3 @@
-npm install
-echo "invoked by github push"
+#!/usr/bin/env sh
+
+npm run tests

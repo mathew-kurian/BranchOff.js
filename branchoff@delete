@@ -1,1 +1,3 @@
+#!/usr/bin/env sh
+
 echo "invoked when branch is deleted"

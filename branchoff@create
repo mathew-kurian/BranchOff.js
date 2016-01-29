@@ -1,2 +1,4 @@
+#!/usr/bin/env sh
+
 npm install
 echo "invoked when branch is cloned"

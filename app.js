@@ -12,6 +12,10 @@ var extend = require('extend');
 var os = require('os');
 var Scribe = require('scribe-js');
 
+// workflow
+// create: <clone{test}, test, fail> OR <clone{test}, test, ok, clone, run>
+// update: <clone{test}, test, start, fail> OR <clone{test}, test, start, ok, pull, start>
+
 var conf = pmx.initModule({
   widget: {
     type: 'generic',
@@ -36,6 +40,10 @@ var console = new Scribe(process.pid, {
   mongo: false,
   basePath: 'scribe/',
   socketPort: conf.socketPort,
+  inspector: {
+    pre: false,
+    callsite: false
+  },
   web: {
     router: {
       username: 'build',
@@ -67,6 +75,10 @@ var console = new Scribe(process.pid, {
 
 var probe = pmx.probe();
 var queue = async.queue((task, callback)=> {
+  if (typeof task !== 'function') {
+    return callback();
+  }
+
   if (task.length) {
     task(callback);
   } else {
@@ -78,7 +90,6 @@ var queue = async.queue((task, callback)=> {
 queue.drain = function () {
   console.log('all items have been processed');
 };
-
 
 var defer = task => {
   queue.push(task);
@@ -95,10 +106,23 @@ probe.metric({name: 'End', value: ()=> conf.end});
 function exec(p, cb) {
   console.info(p);
 
+  if (cb === true) {
+    return shell.exec(p);
+  }
+
+  var out = '';
   var child = shell.exec(p, {async: true, silent: true});
-  child.stdout.on('data', data => console.log(data));
-  child.stderr.on('data', data => console.error(data));
-  child.on('exit', () => cb());
+  child.stdout.on('data', data => {
+    console.log(data);
+    out += data;
+  });
+
+  child.stderr.on('data', data => {
+    console.error(data);
+    out += data;
+  });
+
+  child.on('exit', code => cb(code, out));
 }
 
 function ecosystem(system) {
@@ -120,9 +144,12 @@ function ecosystem(system) {
   }
 }
 
-function resolve(uri, branch, scale) {
+function resolve(uri, branch, opts) {
+  opts = extend(true, {scale: null, test: false}, opts);
+
+  var mode = opts.test ? 'test' : '';
   var system = ecosystem();
-  var folder = (uri + branch).replace(/[^a-zA-Z0-9\-]/g, '');
+  var folder = (uri + branch + mode).replace(/[^a-zA-Z0-9\-]/g, '');
   var id = folder;
   var start = conf.start;
   var end = conf.end;
@@ -153,13 +180,8 @@ function resolve(uri, branch, scale) {
 
   var maxInstances = parseInt(isNaN(conf.maxInstances) || conf.maxInstances <= 0 ? os.cpus().length : conf.maxInstances);
 
-  if (arguments.length == 2) {
-    scale = context.scale || 1;
-  } else {
-    scale = Math.abs(parseInt(isNaN(scale) ? 1 : scale));
-  }
-
-  context.scale = Math.min(scale, maxInstances);
+  context.mode = mode;
+  context.scale = Math.abs(Math.min(Math.abs(parseInt(typeof opts.scale !== 'number' ? 1 : opts.scale)), maxInstances));
 
   system[id] = context;
 
@@ -181,12 +203,8 @@ function create(ctx, cb) {
   exec([createDir, clone].join(' && '), cb);
 }
 
-function update(ctx, forced, cb) {
-  var pull = ["cd", ctx.dir, "&& git config credential.helper store && git reset --hard && git pull"].join(" ");
-
-  if (forced) {
-    pull += ' -f';
-  }
+function update(ctx, cb) {
+  var pull = ["cd", ctx.dir, "&& git config credential.helper store && git reset --hard && git pull -f"].join(" ");
 
   exec(pull, cb);
 }
@@ -232,7 +250,7 @@ function start(ctx, cb) {
 
     console.log('PM2 connected');
 
-    var name = ctx.port + '-' + ctx.branch;
+    var name = [ctx.port, ctx.branch, ctx.mode].join('-');
 
     config = extend(true, {}, {
       script: `./bin/www`,
@@ -279,26 +297,96 @@ function start(ctx, cb) {
   });
 }
 
-function jumpstart(ctx, repoExists) {
-  console.log('Jumpstart ' + ctx.id + ' - repoExists:' + repoExists);
+var Reducer = {
+  restore(then, opts) {
+    var system = ecosystem();
+    for (var m in system) {
+      (function (ctx) {
+        opts = opts || {};
+        ctx = resolve(ctx.uri, ctx.branch, {test: false});
 
-  if (repoExists) {
-    defer(cb => update(ctx, true, cb));
-    defer(cb => trigger(ctx, 'push', cb));
-  } else {
-    defer(cb => create(ctx, cb));
-    defer(cb => trigger(ctx, 'create', cb));
+        console.tag('jumpstart').log(ctx, opts);
+
+        defer(cb => create(ctx, cb));
+        defer(cb => trigger(ctx, 'create', cb));
+        defer(cb => start(ctx, cb));
+        defer(then);
+      })(system[m])
+    }
+  },
+  create: function (uri, branch, then, opts) {
+    opts = opts || {};
+
+    var ctx = resolve(uri, branch, {test: true}); // resolve test dir
+
+    console.tag('create').log(ctx, opts);
+
+    defer(cb=> create(ctx, cb)); // clone test
+    defer(cb=> trigger(ctx, 'create', cb)); // run create script
+    defer(cb => start(ctx, cb)); // start test
+    defer(cb=> trigger(ctx, 'test', (code, output)=> { // trigger test script
+      console.log({code: code, output: output});
+
+      // trigger script with args
+      console.log(trigger(ctx, code ? 'fail' : 'ok', true, JSON.stringify({code: code, output: output})));
+
+      defer(cb => destroy(ctx, cb)); // destroy the test repo
+      cb();
+
+      // if test is ok
+      if (!code) {
+        ctx = resolve(uri, branch, {test: false}); // resolve actual directory
+        defer(cb=> create(ctx, cb)); // clone
+        defer(cb=> trigger(ctx, 'create', cb)); // run create script
+        defer(cb => start(ctx, cb)); // start
+      }
+
+      defer(then);
+    }));
+  },
+  update: function (uri, branch, then, opts) {
+    opts = opts || {};
+
+    var ctx = resolve(uri, branch, {test: true, scale: opts.scale}); // resolve test dir
+
+    console.tag('update').log(ctx, opts);
+
+    defer(cb=> create(ctx, cb)); // clone test
+    defer(cb=> trigger(ctx, 'create', cb)); // run create script
+    defer(cb => start(ctx, cb)); // start test
+    defer(cb=> trigger(ctx, 'test', (code, output)=> { // trigger test script
+      console.log({code: code, output: output});
+
+      // trigger script with args
+      console.log(trigger(ctx, code ? 'fail' : 'ok', true, JSON.stringify({code: code, output: output})));
+
+      // destroy the test repo
+      defer(cb => destroy(ctx, cb));
+      cb();
+
+      // if test is ok
+      if (!code) {
+        // resolve actual directory
+        ctx = resolve(uri, branch, {test: false, scale: opts.scale});
+        defer(cb=> create(ctx, cb)); // clone
+        defer(cb=> update(ctx, true, cb)); // update
+        defer(cb=> trigger(ctx, 'push', cb)); // run create script
+        defer(cb => start(ctx, cb)); // start
+      }
+
+      defer(then);
+    }));
+  },
+  destroy: function (uri, branch, then, opts) {
+    var ctx = resolve(uri, branch, {test: false});
+
+    console.tag('destroy').log(ctx, opts);
+
+    defer(cb=> trigger(ctx, 'delete', cb));
+    defer(cb => destroy(ctx, cb));
+    defer(then);
   }
-
-  defer(cb => start(ctx, cb));
-}
-
-function restore() {
-  var system = ecosystem();
-  for (var m in system) {
-    jumpstart(system[m]);
-  }
-}
+};
 
 function handleGitEvent(event, payload) {
   var repository = payload.repository;
@@ -341,21 +429,13 @@ function handleGitEvent(event, payload) {
 
   console.log(event, uri, branch);
 
-  var ctx = resolve(uri, branch);
-
   switch (event) {
     case "create":
-      defer(cb=> create(ctx, cb));
-    case "pull_request":
+      return Reducer.create(uri, branch);
     case "push":
-      defer(cb=> update(ctx, !!payload.forced, cb));
-    default:
-      defer(cb=> trigger(ctx, event, cb));
-      defer(cb => start(ctx, cb));
-      break;
+      return Reducer.update(uri, branch);
     case "destroy":
-      defer(cb=> trigger(ctx, event, cb));
-      defer(cb => destroy(ctx, cb));
+      return Reducer.destroy(uri, branch);
   }
 }
 
@@ -391,17 +471,15 @@ app.post('/destroy', (req, res)=> {
   uri = decodeURI(uri);
   branch = decodeURIComponent(branch);
 
-  var context = resolve(uri, branch);
+  console.log(req.body);
 
-  console.log(context);
-
-  defer(cb => destroy(context, cb));
-  defer(()=>res.redirect('/ecosystem'));
+  Reducer.destroy(uri, branch, ()=>res.redirect('/ecosystem'));
 });
 
 app.post('/deploy', (req, res)=> {
   var uri = req.body.uri;
   var branch = req.body.branch || 'master';
+  var func;
 
   if (!uri || !branch) {
     throw new Error('Uri, branch not provided');
@@ -409,38 +487,16 @@ app.post('/deploy', (req, res)=> {
 
   uri = decodeURI(uri);
   branch = decodeURIComponent(branch);
+  func = req.body.update ? 'update' : 'create';
 
-  var context = resolve(uri, branch, req.body.scale);
+  console.log(req.body, func);
 
-  console.log(context);
-
-  jumpstart(context, req.body.update);
-
-  defer(()=>res.redirect('/ecosystem'));
+  Reducer[func](uri, branch, ()=>res.redirect('/ecosystem'), {scale: req.body.scale});
 });
 
 
 app.listen(conf.port, ()=> console.log('Listening to port ' + conf.port));
 
 if (require.main === module) {
-  restore();
-
-  var branch, uri, repo = conf.default_repo;
-
-  if (repo) {
-    var idx = repo.indexOf("#");
-
-    if (idx > -1) {
-      uri = repo.substr(0, idx);
-      branch = repo.substr(idx + 1);
-    } else {
-      uri = repo;
-      branch = "master";
-    }
-  }
-
-  if (uri && branch) {
-    var context = resolve(uri, branch);
-    jumpstart(context);
-  }
+  Reducer.restore();
 }
