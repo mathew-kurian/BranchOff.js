@@ -4,6 +4,7 @@ html(lang='en')
   head
     title BranchOff - Ecosystem
     meta(charset='utf8')
+    meta(http-equiv="refresh", content="30")
     meta(name="viewport" content="width=device-width, initial-scale=1")
     include styles.jade
   body.flex.vertical(style='height:100%;')
@@ -41,4 +42,3 @@ html(lang='en')
             script.
               document.getElementById('link-#{i}').href = window.location.protocol + '//' +
                       window.location.hostname + ':' + #{system.port};
-

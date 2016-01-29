@@ -21,14 +21,16 @@ var Pipeline = {
     for (var id in system) {
       if (system.hasOwnProperty(id)) {
         (function (ctx, id) {
-          ctx = core.resolve(ctx.uri, ctx.branch);
-
           console.tag('jumpstart', id).log(ctx, opts);
 
-          defer(cb => core.create(ctx, cb));
-          defer(cb => core.trigger(ctx, 'create', cb));
-          defer(cb => core.start(ctx, cb));
-          defer(then);
+          if (ctx.mode === 'test') {
+            this.destroy(ctx.uri, ctx.branch, null, ctx);
+          } else {
+            defer(cb => core.create(ctx, cb));
+            defer(cb => core.trigger(ctx, 'create', cb));
+            defer(cb => core.start(ctx, cb));
+            defer(then);
+          }
         })(system[id], id);
       }
     }
