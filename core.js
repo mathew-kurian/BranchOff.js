@@ -97,12 +97,12 @@ function exec(p, cb) {
   var out = '';
   var child = shell.exec(p, {async: true, silent: true});
   child.stdout.on('data', data => {
-    //console.log(data);
+    console.tag('exec').log(data);
     out += data;
   });
 
   child.stderr.on('data', data => {
-    //console.error(data);
+    console.tag('exec').error(data);
     out += data;
   });
 
