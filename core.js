@@ -79,7 +79,7 @@ var queue = async.queue((task, callback)=> {
 }, 1);
 
 queue.drain = function () {
-  console.log('all items have been processed');
+  console.tag('queue').log('all items have been processed');
 };
 
 var defer = task => {
@@ -121,7 +121,9 @@ function ecosystem(system) {
     }
   } else {
     try {
-      fs.writeFileSync(ecofile, JSON.stringify(system, null, 4), {encoding: 'utf8'});
+      var out = JSON.stringify(system, null, 4);
+      //console.tag('ecosystem', 'write').log(out);
+      fs.writeFileSync(ecofile, out, {encoding: 'utf8'});
     } catch (e) {
       // ignore
     }
@@ -159,7 +161,6 @@ function resolve(uri, branch, opts) {
     var dir = path.join(cwd, folder);
 
     context = {uri: uri, cwd: cwd, id: folder, folder: folder, dir: dir, branch: branch, port: port};
-
   }
 
   var maxInstances = parseInt(isNaN(conf.maxInstances) || conf.maxInstances <= 0 ? os.cpus().length : conf.maxInstances);
@@ -176,6 +177,9 @@ function resolve(uri, branch, opts) {
 
 function trigger(ctx, event, cb) {
   var fp = path.join(ctx.dir, 'branchoff@' + event);
+
+  console.tag('trigger').log(fp);
+
   try {
     if (fs.statSync(fp)) {
       var runScript = ['cd ', ctx.dir, '&&', '.', './branchoff@' + event].join(' ');
@@ -183,7 +187,7 @@ function trigger(ctx, event, cb) {
     }
   } catch (e) {
     var res = {code: 0, output: 'No file'};
-    return cb === true ? res : cb(res);
+    return cb === true ? res : cb(res.code, res.output);
   }
 }
 
@@ -215,13 +219,13 @@ function destroy(ctx, cb) {
 
   pm2.connect(function (err) {
     if (err) {
-      console.error(err);
+      console.tag('destroy').error(err);
       del();
       return cb(err);
     }
     pm2.delete(name, err => {
       if (err) {
-        console.error(err);
+        console.tag('destroy').error(err);
         del();
         return cb(err);
       }
@@ -240,7 +244,8 @@ function start(ctx, cb) {
   try {
     config = JSON.parse(fs.readFileSync(ctx.dir + `/branchoff@config`, {encoding: 'utf8'}))
   } catch (e) {
-    console.error("Reverting to default config", e);
+    console.tag('start').error("Reverting to default config");
+    console.tag('start').error(e);
   }
 
   pm2.connect(function (err) {

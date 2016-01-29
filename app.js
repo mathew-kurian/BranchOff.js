@@ -19,16 +19,18 @@ var Pipeline = {
 
     var system = core.ecosystem();
     for (var id in system) {
-      (function (ctx, id) {
-        ctx = core.resolve(ctx.uri, ctx.branch);
+      if (system.hasOwnProperty(id)) {
+        (function (ctx, id) {
+          ctx = core.resolve(ctx.uri, ctx.branch);
 
-        console.tag('jumpstart', id).log(ctx, opts);
+          console.tag('jumpstart', id).log(ctx, opts);
 
-        defer(cb => core.create(ctx, cb));
-        defer(cb => core.trigger(ctx, 'create', cb));
-        defer(cb => core.start(ctx, cb));
-        defer(then);
-      })(system[id], id)
+          defer(cb => core.create(ctx, cb));
+          defer(cb => core.trigger(ctx, 'create', cb));
+          defer(cb => core.start(ctx, cb));
+          defer(then);
+        })(system[id], id);
+      }
     }
   },
   create: function (uri, branch, then, opts) {
@@ -38,8 +40,8 @@ var Pipeline = {
       if (err) {
         console.tag('update').log('Tests failed! Skipping deployment');
       } else {
-        var ctx = core.resolve(uri, branch, {scale: opts.scale})
-        console.tag('update').log('Tests passed! Deploying action branch');
+        var ctx = core.resolve(uri, branch, {scale: opts.scale});
+        console.tag('update').log('Tests passed! Deploying actual branch');
 
         defer(cb=> core.create(ctx, cb));
         defer(cb=> core.trigger(ctx, 'create', cb));
@@ -79,12 +81,12 @@ var Pipeline = {
       if (err) {
         console.tag('update').log('Tests failed! Skipping deployment');
       } else {
-        var ctx = resolve(uri, branch, {scale: opts.scale});
+        var ctx = core.resolve(uri, branch, {scale: opts.scale});
 
-        console.tag('update').log('Tests passed! Deploying action branch');
+        console.tag('update').log('Tests passed! Deploying actual branch');
 
         defer(cb=> core.update(ctx, true, cb));
-        defer(cb=> core.trigger(ctx, 'push', cb));
+        defer(cb=> core.trigger(ctx, 'update', cb));
         defer(cb => core.start(ctx, cb));
       }
 
@@ -92,9 +94,9 @@ var Pipeline = {
     }, opts);
   },
   destroy: function (uri, branch, then, opts) {
-    var ctx = resolve(uri, branch, {mode: opts.mode});
+    var ctx = core.resolve(uri, branch, {mode: opts.mode});
 
-    console.tag('destroy').log(ctx, opts);
+    console.tag('destroy').log(ctx);
 
     defer(cb=> core.trigger(ctx, 'delete', cb));
     defer(cb => core.destroy(ctx, cb));
@@ -130,6 +132,8 @@ function handleGitEvent(event, payload) {
       } else if (payload.deleted == true) {
         event = 'destroy';
         break;
+      } else {
+        event = 'update';
       }
       break;
     case "pull_request":
@@ -146,7 +150,7 @@ function handleGitEvent(event, payload) {
   switch (event) {
     case "create":
       return Pipeline.create(uri, branch);
-    case "push":
+    case "update":
       return Pipeline.update(uri, branch);
     case "destroy":
       return Pipeline.destroy(uri, branch);
@@ -215,7 +219,7 @@ app.post('/deploy', (req, res)=> {
   res.redirect('/ecosystem');
 });
 
-app.listen(conf.port, ()=> console.log('Listening to port ' + conf.port));
+app.listen(conf.port, ()=> console.tag('app').log('Listening to port ' + conf.port));
 
 if (require.main === module) {
   Pipeline.restore();
