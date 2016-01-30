@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-echo "invoked for fail"
+echo "invoked for pass"
 
 code=$0
 output=$1
