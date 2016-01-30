@@ -266,6 +266,10 @@ function start(ctx, cb) {
 
     config = extend(true, {}, {
       script: `./bin/www`,
+      "restart_delay": 10000,
+      "watch": false,
+      "min_uptime": "20s",
+      "max_restarts": 3,
       env: {}
     }, config.pm2 || {}, {
       name: name,
