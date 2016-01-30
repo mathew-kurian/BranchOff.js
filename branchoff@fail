@@ -5,4 +5,4 @@ echo "invoked for fail"
 code=$1
 output=$2
 
-echo "Test $code $output"
+echo "Output: $code $output"
