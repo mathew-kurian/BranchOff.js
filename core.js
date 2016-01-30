@@ -190,7 +190,7 @@ function trigger(ctx, event, cb, args) {
   try {
     if (fs.statSync(fp)) {
       var runScript = ['cd', ctx.dir, '&&', '.', './branchoff@' + event]
-          .concat(args.map(a => "'" + String(a).replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'")).join(' ');
+          .concat(args.map(a => JSON.stringify(a))).join(' ');
       process.stdout.write(runScript + '\n\n\n\n');
       return exec(runScript, cb);
     }
