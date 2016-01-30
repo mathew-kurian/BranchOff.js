@@ -87,10 +87,7 @@ var defer = task => {
   console.tag('queue').log('Deferred tasks', queue.length());
 };
 
-function exec(p, cb, args) {
-  args = args || [];
-  args = Array.isArray(args) ? args : [args];
-
+function exec(p, cb) {
   console.tag('exec').info(p);
 
   if (cb === true) {
@@ -98,10 +95,11 @@ function exec(p, cb, args) {
   }
 
   var out = '';
-  var child = shell.exec(p + ' ' + args.map(a => "'" + a.replace(/'/g, "\\'") + "'").join(" "), {
+  var child = shell.exec(p, {
     async: true,
     silent: true
   });
+
   child.stdout.on('data', data => {
     console.tag('exec').log(data);
     out += data;
@@ -182,14 +180,17 @@ function resolve(uri, branch, opts) {
 }
 
 function trigger(ctx, event, cb, args) {
+  args = args || [];
+  args = Array.isArray(args) ? args : [args];
+
   var fp = path.join(ctx.dir, 'branchoff@' + event);
 
   console.tag('trigger').log(fp);
 
   try {
     if (fs.statSync(fp)) {
-      var runScript = ['cd ', ctx.dir, '&&', '.', './branchoff@' + event].join(' ');
-      return exec(runScript, cb, args);
+      var runScript = ['cd', ctx.dir, '&&', '.', './branchoff@' + event].join(' ');
+      return exec(runScript +  ' ' + args.map(a => "'" + a.replace(/'/g, "\\'") + "'").join(" "), cb);
     }
   } catch (e) {
     var res = {code: 0, output: 'No file'};
