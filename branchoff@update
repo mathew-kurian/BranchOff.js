@@ -1,3 +1,5 @@
 #!/usr/bin/env sh
 
+npm --no-color --no-spin --loglevel=error update
+
 npm run tests

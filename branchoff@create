@@ -1,4 +1,5 @@
 #!/usr/bin/env sh
 
-npm --no-color install
+npm set progress=false
+npm --no-color --no-spin --loglevel=error install
 echo "invoked when branch is cloned"
