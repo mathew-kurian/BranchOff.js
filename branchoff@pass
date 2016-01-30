@@ -2,7 +2,7 @@
 
 echo "invoked for pass"
 
-code=$0
-output=$1
+code=$1
+output=$2
 
 echo "Test $code $output"

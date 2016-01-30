@@ -28,6 +28,9 @@
     "dir": "",
     "maxInstances": -1
   },
+  "scripts": {
+    "tests": "echo 'PASSED!'"
+  },
   "apps": [
     {
       "merge_logs": true,
