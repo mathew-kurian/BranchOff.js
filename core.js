@@ -194,7 +194,7 @@ function trigger(ctx, event, cb, args) {
       return exec(runScript, cb);
     }
   } catch (e) {
-    console.tag('trigger').error('File not found');
+    console.tag('trigger').error(e);
     var res = {code: 0, output: 'No file'};
     return cb === true ? res : cb(res.code, res.output);
   }
