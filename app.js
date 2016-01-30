@@ -86,6 +86,7 @@ var Pipeline = {
 
         console.tag('update').log('Tests passed! Deploying actual branch');
 
+        defer(cb=> core.create(ctx, cb));
         defer(cb=> core.update(ctx, cb));
         defer(cb=> core.trigger(ctx, 'update', cb));
         defer(cb=> core.trigger(ctx, 'push', cb)); // TODO deprecate
