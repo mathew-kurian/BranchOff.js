@@ -193,7 +193,7 @@ function trigger(ctx, event, cb, args) {
           .concat(args.map(a => {
             return JSON.stringify(a)
                 .replace(/\\"/g, '\\\\\\"')
-                .replace(/!/g, '\\\\\\!');
+                .replace(/!/g, '');
           })).join(' ');
       return exec(runScript, cb);
     }
