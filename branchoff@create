@@ -1,4 +1,4 @@
 #!/usr/bin/env sh
 
-npm install
+npm --no-color install
 echo "invoked when branch is cloned"
