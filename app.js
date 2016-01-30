@@ -88,7 +88,7 @@ var Pipeline = {
 
         defer(cb=> core.update(ctx, cb));
         defer(cb=> core.trigger(ctx, 'update', cb));
-        defer(cb=> core.trigger(ctx, 'push', cb)); // deprecated
+        defer(cb=> core.trigger(ctx, 'push', cb)); // TODO deprecate
         defer(cb => core.start(ctx, cb));
       }
 

@@ -191,7 +191,6 @@ function trigger(ctx, event, cb, args) {
     if (fs.statSync(fp)) {
       var runScript = ['cd', ctx.dir, '&&', '.', './branchoff@' + event]
           .concat(args.map(a => JSON.stringify(a))).join(' ');
-      process.stdout.write(runScript + '\n\n\n\n');
       return exec(runScript, cb);
     }
   } catch (e) {
