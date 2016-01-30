@@ -100,7 +100,7 @@ var Pipeline = {
 
     console.tag('destroy').log(ctx);
 
-    defer(cb=> core.trigger(ctx, 'delete', cb));
+    defer(cb=> core.trigger(ctx, 'destroy', cb));
     defer(cb => core.destroy(ctx, cb));
     defer(then);
   }
