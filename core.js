@@ -185,12 +185,13 @@ function trigger(ctx, event, cb, args) {
 
   var fp = path.join(ctx.dir, 'branchoff@' + event);
 
-  console.tag('trigger').log(fp);
+  console.tag('trigger').log(fp, args);
 
   try {
     if (fs.statSync(fp)) {
-      var runScript = ['cd', ctx.dir, '&&', '.', './branchoff@' + event].join(' ');
-      return exec(runScript +  ' ' + args.map(a => "'" + a.replace(/'/g, "\\'") + "'").join(" "), cb);
+      var runScript = ['cd', ctx.dir, '&&', '.', './branchoff@' + event]
+          .concat(args.map(a => "'" + a.replace(/'/g, "\\'") + "'")).join(' ');
+      return exec(runScript +  ' ', cb);
     }
   } catch (e) {
     var res = {code: 0, output: 'No file'};
