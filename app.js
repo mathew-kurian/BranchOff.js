@@ -67,7 +67,7 @@ var Pipeline = {
     defer(cb => core.start(ctx, cb));
     defer(cb=> core.trigger(ctx, 'test', (code, output)=> {
       console.tag('test').log({code: code, output: output});
-      console.tag('test').log(core.trigger(ctx, code ? 'fail' : 'pass', true, [code, output]));
+      console.tag('test').log(core.trigger(ctx, code ? 'fail' : 'pass', null, [code, output]));
 
       this.destroy(ctx.uri, ctx.branch, null, ctx);
       cb();

@@ -191,9 +191,10 @@ function trigger(ctx, event, cb, args) {
     if (fs.statSync(fp)) {
       var runScript = ['cd', ctx.dir, '&&', '.', './branchoff@' + event]
           .concat(args.map(a => "'" + a.replace(/'/g, "\\'") + "'")).join(' ');
-      return exec(runScript +  ' ', cb);
+      return exec(runScript, cb);
     }
   } catch (e) {
+    console.tag('trigger').error('File not found');
     var res = {code: 0, output: 'No file'};
     return cb === true ? res : cb(res.code, res.output);
   }
