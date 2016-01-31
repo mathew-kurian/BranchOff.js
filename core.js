@@ -6,8 +6,8 @@ var path = require('path');
 var extend = require('extend');
 var Scribe = require('scribe-js');
 var async = require('async');
-var shell = require('shelljs');
-var shellescape = require('shell-escape');
+var esc = require('shell-escape');
+var child = require('child_process');
 
 var conf = pmx.initModule({
   widget: {
@@ -88,30 +88,49 @@ var defer = task => {
   console.tag('queue').log('Deferred tasks', queue.length());
 };
 
-function exec(p, cb) {
+function exec(p, cb, args) {
+  args = args || [];
+  args = Array.isArray(args) ? args : [args];
+
+  p += ' ' + esc(args)
+          .replace(/\n/g, '\\n')
+          .replace(/\r/g, '\\r')
+          .replace(/\t/g, '\\t')
+          .replace(/\r/g, '\\r')
+          .replace(/"/g, '\\"');
+
   console.tag('exec').info(p);
 
   if (cb === true) {
-    return shell.exec(p);
+    var res = child.spawnSync('bash', {input: p});
+    return {code: res.status, output: res.stdout.toString('utf8') + res.stderr.toString('utf8')};
   }
 
   var out = '';
-  var child = shell.exec(p, {
-    async: true,
-    silent: true
-  });
+  var terminal = child.spawn('bash');
 
-  child.stdout.on('data', data => {
+  terminal.stdout.on('data', data => {
+    data = data.toString('utf8');
+    if (!data.trim()) return;
     console.tag('exec').log(data);
     out += data;
   });
 
-  child.stderr.on('data', data => {
+  terminal.stderr.on('data', data => {
+    data = data.toString('utf8');
+    if (!data.trim()) return;
     console.tag('exec').log(data);
     out += data;
   });
 
-  child.on('exit', code => cb(code, out));
+  terminal.on('exit', code => cb(code, out));
+
+  setTimeout(function () {
+    console.tag('exec').log('Open terminal');
+    terminal.stdin.write(p + '\n');
+    console.tag('exec').log('Close terminal');
+    terminal.stdin.end();
+  }, 1000);
 }
 
 function ecosystem(system) {
@@ -181,9 +200,6 @@ function resolve(uri, branch, opts) {
 }
 
 function trigger(ctx, event, cb, args) {
-  args = args || [];
-  args = Array.isArray(args) ? args : [args];
-
   var fp = path.join(ctx.dir, 'branchoff@' + event);
 
   console.tag('trigger').log(fp, args);
@@ -191,7 +207,7 @@ function trigger(ctx, event, cb, args) {
   try {
     if (fs.statSync(fp)) {
       var runScript = ['cd', ctx.dir, '&&', '.', './branchoff@' + event].join(' ');
-      return exec(runScript + ' ' + shellescape(args).replace(/\r/g, ''), cb);
+      return exec(runScript, cb, args);
     }
   } catch (e) {
     console.tag('trigger').error(e);
