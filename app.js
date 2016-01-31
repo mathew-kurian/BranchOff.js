@@ -97,6 +97,8 @@ var Pipeline = {
     }, opts);
   },
   destroy: function (uri, branch, then, opts) {
+    opts = opts || {};
+
     var ctx = core.resolve(uri, branch, {mode: opts.mode});
 
     console.tag('destroy').log(ctx);
@@ -138,9 +140,6 @@ function handleGitEvent(event, payload) {
       } else {
         event = 'update';
       }
-      break;
-    case "pull_request":
-      branch = payload.base.name;
       break;
   }
 
