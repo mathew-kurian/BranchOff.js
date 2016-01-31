@@ -7,6 +7,7 @@ var extend = require('extend');
 var Scribe = require('scribe-js');
 var async = require('async');
 var shell = require('shelljs');
+var shellescape = require('shell-escape');
 
 var conf = pmx.initModule({
   widget: {
@@ -189,13 +190,8 @@ function trigger(ctx, event, cb, args) {
 
   try {
     if (fs.statSync(fp)) {
-      var runScript = ['cd', ctx.dir, '&&', '.', './branchoff@' + event]
-          .concat(args.map(a => {
-            return JSON.stringify(a)
-                .replace(/\\"/g, '\\\\\\"')
-                .replace(/!/g, '');
-          })).join(' ');
-      return exec(runScript, cb);
+      var runScript = ['cd', ctx.dir, '&&', '.', './branchoff@' + event].join(' ');
+      return exec(runScript + ' ' + shellescape(args).replace(/\r/g, ''), cb);
     }
   } catch (e) {
     console.tag('trigger').error(e);

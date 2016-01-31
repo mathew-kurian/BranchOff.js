@@ -1,6 +1,6 @@
 {
   "name": "branch-off",
-  "version": "1.44.0",
+  "version": "1.45.0",
   "description": "Auto branch-deployment with Github webhooks",
   "main": "app.js",
   "dependencies": {
@@ -13,6 +13,7 @@
     "pm2": "latest",
     "pmx": "beta",
     "scribe-js": "git://github.com/bluejamesbond/Scribe.js.git#dev",
+    "shell-escape": "^0.2.0",
     "shelljs": "^0.5.3"
   },
   "repository": {
