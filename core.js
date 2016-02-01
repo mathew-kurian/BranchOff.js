@@ -237,26 +237,24 @@ function destroy(ctx, cb) {
   delete system[ctx.id];
   ecosystem(system);
 
-  function del() {
+  function close(err) {
     var removeDir = ["rm -rf", ctx.dir].join(" ");
-    exec(removeDir, ()=>0);
+    exec(removeDir, true);
+    cb(err);
   }
 
   pm2.connect(function (err) {
     if (err) {
       console.tag('destroy').error(err);
-      del();
-      return cb(err);
+      return close(err);
     }
+
     pm2.delete(name, err => {
       if (err) {
         console.tag('destroy').error(err);
-        del();
-        return cb(err);
       }
 
-      del();
-      cb();
+      close(err);
     });
   });
 }
