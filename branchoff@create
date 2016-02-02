@@ -1,5 +1,4 @@
 #!/usr/bin/env sh
 
 npm set progress=false
-npm --no-color --no-spin --loglevel=error install
-echo "invoked when branch is cloned"
+npm --no-color --no-spin --loglevel=error --cache-min 9999999 install --production

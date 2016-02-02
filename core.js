@@ -51,14 +51,7 @@ var console = new Scribe(process.pid, {
       socketPorts: [conf.socketPort],
       exposed: {
         all: {label: 'all', query: {expose: {$exists: true}}},
-        error: {label: 'error', query: {expose: 'error'}},
-        express: {label: 'express', query: {expose: 'express'}},
-        info: {label: 'info', query: {expose: 'info'}},
-        log: {label: 'log', query: {expose: 'log'}},
-        warn: {label: 'warn', query: {expose: 'warn'}},
-        trace: {label: 'trace', query: {expose: 'trace'}},
-        timing: {label: 'time', query: {expose: 'timing'}},
-        user: {label: 'user', query: {'transient.tags': {$in: ['USER ID']}}}
+        queue: {label: 'queue', query: {'transient.tags': {$in: ['queue']}}}
       }
     }
   },
@@ -67,25 +60,34 @@ var console = new Scribe(process.pid, {
 });
 
 var queue = async.queue((task, callback)=> {
-  if (typeof task !== 'function') {
-    return callback();
+  var b = process.hrtime();
+  console.tag('queue').log(`Started ${task.name}`);
+
+  function next(){
+    var t = process.hrtime(b);
+    console.tag('queue').log(`Finished ${task.name} (${Number((t[0]*1000) + (t[1]/1000000)).toFixed(3)}ms)`);
+    callback.apply(queue, arguments);
   }
 
-  if (task.length) {
-    task(callback);
+  if (typeof task.func !== 'function') {
+    return next();
+  }
+
+  if (task.func.length) {
+    task.func(next);
   } else {
-    task();
-    callback();
+    task.func();
+    next();
   }
 }, 1);
 
 queue.drain = function () {
-  console.tag('queue').log('all items have been processed');
+  console.tag('queue').log('All items have been processed');
 };
 
-var defer = task => {
-  queue.push(task);
-  console.tag('queue').log('Deferred tasks', queue.length());
+var defer = (func, name) => {
+  queue.push({func, name});
+  console.tag('queue').log(`Deferred task ${name}, Queue ${queue.length()}`);
 };
 
 function exec(p, cb, args) {
@@ -131,6 +133,20 @@ function exec(p, cb, args) {
     console.tag('exec').log('Close terminal');
     terminal.stdin.end();
   }, 1000);
+}
+
+function available(port) {
+  var system = ecosystem();
+  var start = conf.start;
+  var end = conf.end;
+
+  for (var i = start; i < end; i++) {
+    for (var m in system) {
+      if (system.hasOwnProperty(m) && system[m].port === port) {
+        return true;
+      }
+    }
+  }
 }
 
 function ecosystem(system) {
@@ -194,7 +210,12 @@ function resolve(uri, branch, opts) {
 
   system[id] = context;
 
-  ecosystem(system);
+  context.save = function () {
+    system[id] = context;
+    ecosystem(system);
+  };
+
+  context.save();
 
   return context;
 }
@@ -276,14 +297,20 @@ function start(ctx, cb) {
 
     console.tag('start').log('PM2 connected');
 
+    var port = config.preferPort;
     var name = [ctx.port, ctx.branch, ctx.mode].join('-');
+
+    if (typeof port === 'number' && available(port)) {
+      ctx.port = port;
+      ctx.save();
+    }
 
     config = extend(true, {}, {
       script: `./bin/www`,
-      "restart_delay": 10000,
-      "watch": false,
-      "min_uptime": "20s",
-      "max_restarts": 3,
+      restart_delay: 10000,
+      watch: false,
+      min_uptime: "20s",
+      max_restarts: 3,
       env: {}
     }, config.pm2 || {}, {
       name: name,
@@ -337,6 +364,7 @@ module.exports = {
   update: update,
   destroy: destroy,
   defer: defer,
+  available: available,
   conf: conf,
   console: console
 };

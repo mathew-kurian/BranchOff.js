@@ -1,5 +1,5 @@
 {
-    "preferredPort": 7000,
+    "preferPort": 7000,
     "pm2": {
         "script": "./test.js",
         "env": {

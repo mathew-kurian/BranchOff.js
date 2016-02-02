@@ -1,6 +1,6 @@
 {
   "name": "branch-off",
-  "version": "1.47.0",
+  "version": "1.48.0",
   "description": "Auto branch-deployment with Github webhooks",
   "main": "app.js",
   "dependencies": {
@@ -34,7 +34,8 @@
     {
       "merge_logs": true,
       "max_memory_restart": "400M",
-      "script": "app.js"
+      "script": "app.js",
+      "next_gen_js": true
     }
   ],
   "author": "Mathew Kurian",
