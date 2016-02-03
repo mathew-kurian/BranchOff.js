@@ -1,5 +1,5 @@
 # BranchOff PM2 Module
-**BETA ONLY**
+**BETA RELEASE**  
 In BranchOff, each branch gets its own port and is auto-deployed on change!
 Benefits of auto-deployment for each Git branch in agile development:
 
