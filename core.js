@@ -106,7 +106,7 @@ function exec(p, cb, args, env) {
 
   console.tag('exec').info(p);
 
-  if (cb === true) {
+  if (typeof cb !== 'function') {
     var res = child.spawnSync(WIN32 ? 'cmd' : 'bash', {input: p, env: env});
     return {code: res.status, output: res.stdout.toString('utf8') + res.stderr.toString('utf8')};
   }
