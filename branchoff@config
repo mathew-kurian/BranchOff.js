@@ -17,15 +17,23 @@
     "test": {
     },
     "mode": {
-      "default": {
+      "release": {
         "MODE": "default"
       },
       "test": {
         "MODE": "test"
       }
+    },
+    "branch": {
+      "master": {
+        "IS_MASTER": true
+      }
     }
   },
   "pm2": {
-    "script": "./test.js"
+    "script": "./test.js",
+    "env": {
+      "YOLO": "TOAST"
+    }
   }
 }

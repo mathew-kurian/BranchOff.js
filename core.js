@@ -154,6 +154,7 @@ function available(port) {
 
 function ecosystem(system) {
   var ecofile = conf.dir || path.join(__dirname, '/../../ecosystem.json');
+
   if (!arguments.length && !system) {
     try {
       system = JSON.parse(fs.readFileSync(ecofile, {encoding: 'utf8'}));
@@ -164,15 +165,20 @@ function ecosystem(system) {
     }
   } else {
     try {
-      for (var s of system) {
-        delete system[s].config; // do not save the config
+      var cpy = extend(true, {}, system);
+
+      for (var s in cpy) {
+        if (cpy.hasOwnProperty(s)) {
+          delete cpy[s].config; // do not save the config
+        }
       }
 
-      var out = JSON.stringify(system, null, 4);
-      //console.tag('ecosystem', 'write').log(out);
+      console.tag('ecosystem').log(cpy);
+
+      var out = JSON.stringify(cpy, null, 4);
       fs.writeFileSync(ecofile, out, {encoding: 'utf8'});
     } catch (e) {
-      // ignore
+      console.tag('ecosystem').error(e);
     }
   }
 }
@@ -227,29 +233,34 @@ function resolve(uri, branch, opts) {
   return context;
 }
 
-function env(config, event, mode) {
+function env(ctx, event) {
+  var config = configuration(ctx);
+  var mode = ctx.mode || 'release';
+
   var x = Object.assign({},
       process.env,
       selectn('env.default', config),
       selectn(`env.${event}`, config),
       selectn(`env.mode.${mode}`, config),
-      selectn(`env.mode.${mode}.${event}`, config));
+      selectn(`env.mode.${mode}.${event}`, config),
+      selectn(`env.branch.default`, config),
+      selectn(`env.branch.${ctx.branch}`, config),
+      selectn(`env.branch.${ctx.branch}.${event}`, config));
+
   console.log(x);
 
   return x;
 }
 
 function trigger(ctx, event, cb, args) {
-  var config = configuration(ctx);
   var fp = path.join(ctx.dir, 'branchoff@' + event);
 
   console.tag('trigger').log(fp, args);
 
   try {
     if (fs.statSync(fp)) {
-      var mode = ctx.mode || 'default';
       var runScript = ['cd', ctx.dir, '&&', '.', './branchoff@' + event].join(' ');
-      return exec(runScript, cb, args, env(config, event, mode));
+      return exec(runScript, cb, args, env(ctx, event));
     }
   } catch (e) {
     console.tag('trigger').error(e);
@@ -355,7 +366,7 @@ function start(ctx, cb) {
         BRANCHOFF_CWD: ctx.dir,
         BRANCHOFF_BRANCH: ctx.branch,
         BRANCHOFF_NAME: ctx.id
-      }, env(config, 'start', ctx.mode))
+      }, env(ctx, 'start'))
     });
 
     var exec_mode = config.exec_mode || 'cluster';
