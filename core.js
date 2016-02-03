@@ -8,6 +8,9 @@ var Scribe = require('scribe-js');
 var async = require('async');
 var esc = require('shell-escape');
 var child = require('child_process');
+var selectn = require('selectn');
+
+var WIN32 = os.platform() === 'win32';
 
 var conf = pmx.initModule({
   widget: {
@@ -63,9 +66,9 @@ var queue = async.queue((task, callback)=> {
   var b = process.hrtime();
   console.tag('queue').log(`Started ${task.name}`);
 
-  function next(){
+  function next() {
     var t = process.hrtime(b);
-    console.tag('queue').log(`Finished ${task.name} (${Number((t[0]*1000) + (t[1]/1000000)).toFixed(3)}ms)`);
+    console.tag('queue').log(`Finished ${task.name} (${Number((t[0] * 1000) + (t[1] / 1000000)).toFixed(3)}ms)`);
     callback.apply(queue, arguments);
   }
 
@@ -90,7 +93,7 @@ var defer = (func, name) => {
   console.tag('queue').log(`Deferred task ${name}, Queue ${queue.length()}`);
 };
 
-function exec(p, cb, args) {
+function exec(p, cb, args, env) {
   args = args || [];
   args = Array.isArray(args) ? args : [args];
 
@@ -104,12 +107,12 @@ function exec(p, cb, args) {
   console.tag('exec').info(p);
 
   if (cb === true) {
-    var res = child.spawnSync('bash', {input: p});
+    var res = child.spawnSync(WIN32 ? 'cmd' : 'bash', {input: p, env: env});
     return {code: res.status, output: res.stdout.toString('utf8') + res.stderr.toString('utf8')};
   }
 
   var out = '';
-  var terminal = child.spawn('bash');
+  var terminal = child.spawn(WIN32 ? 'cmd' : 'bash', {env: env});
 
   terminal.stdout.on('data', data => {
     data = data.toString('utf8');
@@ -161,6 +164,10 @@ function ecosystem(system) {
     }
   } else {
     try {
+      for (var s of system) {
+        delete system[s].config; // do not save the config
+      }
+
       var out = JSON.stringify(system, null, 4);
       //console.tag('ecosystem', 'write').log(out);
       fs.writeFileSync(ecofile, out, {encoding: 'utf8'});
@@ -220,15 +227,29 @@ function resolve(uri, branch, opts) {
   return context;
 }
 
+function env(config, event, mode) {
+  var x = Object.assign({},
+      process.env,
+      selectn('env.default', config),
+      selectn(`env.${event}`, config),
+      selectn(`env.mode.${mode}`, config),
+      selectn(`env.mode.${mode}.${event}`, config));
+  console.log(x);
+
+  return x;
+}
+
 function trigger(ctx, event, cb, args) {
+  var config = configuration(ctx);
   var fp = path.join(ctx.dir, 'branchoff@' + event);
 
   console.tag('trigger').log(fp, args);
 
   try {
     if (fs.statSync(fp)) {
+      var mode = ctx.mode || 'default';
       var runScript = ['cd', ctx.dir, '&&', '.', './branchoff@' + event].join(' ');
-      return exec(runScript, cb, args);
+      return exec(runScript, cb, args, env(config, event, mode));
     }
   } catch (e) {
     console.tag('trigger').error(e);
@@ -280,8 +301,10 @@ function destroy(ctx, cb) {
   });
 }
 
-function start(ctx, cb) {
-  console.tag('start').log('Attempting to start ' + ctx.id);
+function configuration(ctx) {
+  if (typeof ctx.config === 'object') {
+    return ctx.config;
+  }
 
   var config = {};
 
@@ -291,6 +314,16 @@ function start(ctx, cb) {
     console.tag('start').error("Reverting to default config");
     console.tag('start').error(e);
   }
+
+  ctx.config = config;
+
+  return config;
+}
+
+function start(ctx, cb) {
+  console.tag('start').log('Attempting to start ' + ctx.id);
+
+  var config = configuration(ctx);
 
   pm2.connect(function (err) {
     if (err) return cb(err);
@@ -312,17 +345,17 @@ function start(ctx, cb) {
       min_uptime: "20s",
       max_restarts: 3,
       env: {}
-    }, config.pm2 || {}, {
+    }, selectn('pm2', config), {
       name: name,
       cwd: `${ctx.dir}`,
       error_file: `${ctx.dir}/out.log`,
       out_file: `${ctx.dir}/out.log`,
-      env: {
+      env: Object.assign({
         BRANCHOFF_PORT: ctx.port,
         BRANCHOFF_CWD: ctx.dir,
         BRANCHOFF_BRANCH: ctx.branch,
         BRANCHOFF_NAME: ctx.id
-      }
+      }, env(config, 'start', ctx.mode))
     });
 
     var exec_mode = config.exec_mode || 'cluster';

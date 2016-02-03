@@ -1,9 +1,31 @@
 {
-    "preferPort": 7000,
-    "pm2": {
-        "script": "./test.js",
-        "env": {
-            "NODE_ENV": "staging"
-        }
+  "preferPort": 7000,
+  "env": {
+    "default": {
+      "NODE_ENV": "staging"
+    },
+    "create": {
+    },
+    "destroy": {
+    },
+    "fail": {
+    },
+    "pass": {
+    },
+    "update": {
+    },
+    "test": {
+    },
+    "mode": {
+      "default": {
+        "MODE": "default"
+      },
+      "test": {
+        "MODE": "test"
+      }
     }
+  },
+  "pm2": {
+    "script": "./test.js"
+  }
 }
