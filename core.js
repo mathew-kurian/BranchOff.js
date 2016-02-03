@@ -140,16 +140,21 @@ function exec(p, cb, args, env) {
 
 function available(port) {
   var system = ecosystem();
-  var start = conf.start;
-  var end = conf.end;
 
-  for (var i = start; i < end; i++) {
-    for (var m in system) {
-      if (system.hasOwnProperty(m) && system[m].port === port) {
-        return true;
-      }
+  for (var m in system) {
+    if (system.hasOwnProperty(m) && system[m].port === port) {
+      return false;
     }
   }
+
+  return true;
+}
+
+function save(ctx){
+  var system = ecosystem();
+  system[ctx.id] = ctx;
+  ecosystem(system);
+  return ctx;
 }
 
 function ecosystem(system) {
@@ -221,14 +226,7 @@ function resolve(uri, branch, opts) {
   context.mode = mode;
   context.scale = Math.abs(Math.min(Math.abs(parseInt(typeof opts.scale !== 'number' ? 1 : opts.scale)), maxInstances));
 
-  system[id] = context;
-
-  context.save = function () {
-    system[id] = context;
-    ecosystem(system);
-  };
-
-  context.save();
+  save(context);
 
   return context;
 }
@@ -345,7 +343,7 @@ function configuration(ctx) {
 
   if (typeof port === 'number' && available(port)) {
     ctx.port = port;
-    ctx.save();
+    save(ctx);
   }
 
   return config;
@@ -417,6 +415,7 @@ module.exports = {
   destroy: destroy,
   defer: defer,
   available: available,
+  save: save,
   conf: conf,
   console: console
 };
