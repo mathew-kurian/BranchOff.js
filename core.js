@@ -245,7 +245,9 @@ function env(ctx, event) {
       selectn(`env.mode.${mode}@${event}`, config),
       selectn(`env.branch.default`, config),
       selectn(`env.branch.${ctx.branch}`, config),
-      selectn(`env.branch.${ctx.branch}@${event}`, config));
+      selectn(`env.branch.${ctx.branch}@${event}`, config),
+      selectn(`env.branch.${ctx.branch}#${mode}`, config),
+      selectn(`env.branch.${ctx.branch}#${mode}@${event}`, config));
 
   console.tag('env').log(x);
 
