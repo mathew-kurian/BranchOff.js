@@ -73,7 +73,7 @@ var Pipeline = {
       cb();
 
       defer(() => then(code), 'test#callback');
-    }));
+    }), 'test#trigger -> test');
   },
   update: function (uri, branch, then, opts) {
     opts = opts || {};

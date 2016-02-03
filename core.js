@@ -247,7 +247,12 @@ function env(ctx, event) {
       selectn(`env.branch.${ctx.branch}`, config),
       selectn(`env.branch.${ctx.branch}@${event}`, config),
       selectn(`env.branch.${ctx.branch}#${mode}`, config),
-      selectn(`env.branch.${ctx.branch}#${mode}@${event}`, config));
+      selectn(`env.branch.${ctx.branch}#${mode}@${event}`, config), {
+        BRANCHOFF_PORT: ctx.port,
+        BRANCHOFF_CWD: ctx.dir,
+        BRANCHOFF_BRANCH: ctx.branch,
+        BRANCHOFF_NAME: ctx.id
+      });
 
   console.tag('env').log(x);
 
@@ -314,6 +319,12 @@ function destroy(ctx, cb) {
   });
 }
 
+/**
+ * Second level resolver
+ *
+ * @param ctx
+ * @returns {*}
+ */
 function configuration(ctx) {
   if (typeof ctx.config === 'object') {
     return ctx.config;
@@ -330,26 +341,26 @@ function configuration(ctx) {
 
   ctx.config = config;
 
+  var port = config.preferPort;
+
+  if (typeof port === 'number' && available(port)) {
+    ctx.port = port;
+    ctx.save();
+  }
+
   return config;
 }
 
 function start(ctx, cb) {
   console.tag('start').log('Attempting to start ' + ctx.id);
 
-  var config = configuration(ctx);
-
   pm2.connect(function (err) {
     if (err) return cb(err);
 
     console.tag('start').log('PM2 connected');
 
-    var port = config.preferPort;
+    var config = configuration(ctx);
     var name = [ctx.port, ctx.branch, ctx.mode].join('-');
-
-    if (typeof port === 'number' && available(port)) {
-      ctx.port = port;
-      ctx.save();
-    }
 
     config = extend(true, {}, {
       script: `./bin/www`,
@@ -363,12 +374,7 @@ function start(ctx, cb) {
       cwd: `${ctx.dir}`,
       error_file: `${ctx.dir}/out.log`,
       out_file: `${ctx.dir}/out.log`,
-      env: Object.assign({
-        BRANCHOFF_PORT: ctx.port,
-        BRANCHOFF_CWD: ctx.dir,
-        BRANCHOFF_BRANCH: ctx.branch,
-        BRANCHOFF_NAME: ctx.id
-      }, env(ctx, 'start'))
+      env: env(ctx, 'start')
     });
 
     var exec_mode = config.exec_mode || 'cluster';
