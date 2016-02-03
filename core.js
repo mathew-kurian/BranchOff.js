@@ -150,7 +150,7 @@ function available(port) {
   return true;
 }
 
-function save(ctx){
+function save(ctx) {
   var system = ecosystem();
   system[ctx.id] = ctx;
   ecosystem(system);
@@ -236,7 +236,12 @@ function env(ctx, event) {
   var mode = ctx.mode || 'release';
 
   var x = Object.assign({},
-      process.env,
+      process.env, {
+        BRANCHOFF_PORT: ctx.port,
+        BRANCHOFF_CWD: ctx.dir,
+        BRANCHOFF_BRANCH: ctx.branch,
+        BRANCHOFF_NAME: ctx.id
+      },
       selectn('env.default', config),
       selectn(`env.${event}`, config),
       selectn(`env.mode.${mode}`, config),
@@ -245,12 +250,7 @@ function env(ctx, event) {
       selectn(`env.branch.${ctx.branch}`, config),
       selectn(`env.branch.${ctx.branch}@${event}`, config),
       selectn(`env.branch.${ctx.branch}#${mode}`, config),
-      selectn(`env.branch.${ctx.branch}#${mode}@${event}`, config), {
-        BRANCHOFF_PORT: ctx.port,
-        BRANCHOFF_CWD: ctx.dir,
-        BRANCHOFF_BRANCH: ctx.branch,
-        BRANCHOFF_NAME: ctx.id
-      });
+      selectn(`env.branch.${ctx.branch}#${mode}@${event}`, config));
 
   console.tag('env').log(x);
 
