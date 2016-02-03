@@ -28,9 +28,9 @@ var Pipeline = {
           if (ctx.mode === 'test') {
             self.destroy(ctx.uri, ctx.branch, null, ctx);
           } else {
-            defer(cb => core.create(ctx, cb), 'restore#create');
-            defer(cb => core.trigger(ctx, 'create', cb), 'restore#trigger -> create');
-            defer(cb => core.start(ctx, cb), 'restore#start');
+            defer(cb=> core.create(ctx, cb), 'restore#create');
+            defer(cb=> core.trigger(ctx, 'create', cb), 'restore#trigger -> create');
+            defer(cb=> core.start(ctx, cb), 'restore#start');
             defer(then, 'restore#callback');
           }
         })(system[id], id);
@@ -49,7 +49,7 @@ var Pipeline = {
 
         defer(cb=> core.create(ctx, cb), 'create#create');
         defer(cb=> core.trigger(ctx, 'create', cb), 'create#trigger -> create');
-        defer(cb => core.start(ctx, cb), 'create#start');
+        defer(cb=> core.start(ctx, cb), 'create#start');
       }
 
       defer(then, 'create#callback');
@@ -64,7 +64,7 @@ var Pipeline = {
 
     defer(cb=> core.create(ctx, cb), 'test#create');
     defer(cb=> core.trigger(ctx, 'create', cb, [ctx.mode]), 'test#trigger -> create');
-    defer(cb => core.start(ctx, cb), 'test#start');
+    defer(cb=> core.start(ctx, cb), 'test#start');
     defer(cb=> core.trigger(ctx, 'test', (code, output)=> {
       console.tag('test').log({code: code, output: output});
       console.tag('test').log(core.trigger(ctx, code ? 'fail' : 'pass', true, [code, output]));
@@ -89,7 +89,7 @@ var Pipeline = {
         defer(cb=> core.create(ctx, cb), 'update#create');
         defer(cb=> core.update(ctx, cb), 'update#update');
         defer(cb=> core.trigger(ctx, 'update', cb), 'update#trigger -> update');
-        defer(cb => core.start(ctx, cb), 'update#start');
+        defer(cb=> core.start(ctx, cb), 'update#start');
       }
 
       defer(then, 'update#callback');
@@ -103,7 +103,7 @@ var Pipeline = {
     console.tag('destroy').log(ctx);
 
     defer(cb=> core.trigger(ctx, 'destroy', cb), 'destroy#trigger -> destroy');
-    defer(cb => core.destroy(ctx, cb), 'destroy#destroy');
+    defer(cb=> core.destroy(ctx, cb), 'destroy#destroy');
     defer(then, 'destroy#callback');
   }
 };

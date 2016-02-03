@@ -20,6 +20,9 @@
       "release": {
         "MODE": "default"
       },
+      "release@create": {
+        "FOO": "BAR"
+      },
       "test": {
         "MODE": "test"
       }
@@ -27,7 +30,10 @@
     "branch": {
       "master": {
         "IS_MASTER": true
-      }
+      },
+      "master@test": {
+        "FOOTOO": "BARTOO"
+      },
     }
   },
   "pm2": {

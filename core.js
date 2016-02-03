@@ -242,12 +242,12 @@ function env(ctx, event) {
       selectn('env.default', config),
       selectn(`env.${event}`, config),
       selectn(`env.mode.${mode}`, config),
-      selectn(`env.mode.${mode}.${event}`, config),
+      selectn(`env.mode.${mode}@${event}`, config),
       selectn(`env.branch.default`, config),
       selectn(`env.branch.${ctx.branch}`, config),
-      selectn(`env.branch.${ctx.branch}.${event}`, config));
+      selectn(`env.branch.${ctx.branch}@${event}`, config));
 
-  console.log(x);
+  console.tag('env').log(x);
 
   return x;
 }
