@@ -1,3 +1,5 @@
+'use strict';
+
 var pmx = require('pmx');
 var os = require('os');
 var pm2 = require('pm2');
@@ -63,13 +65,13 @@ var console = new Scribe(process.pid, {
   debug: false
 });
 
-var queue = async.queue((task, callback)=> {
+var queue = async.queue(function (task, callback) {
   var b = process.hrtime();
-  console.tag('queue').log(`Started ${task.name}`);
+  console.tag('queue').log('Started ' + task.name);
 
   function next() {
     var t = process.hrtime(b);
-    console.tag('queue').log(`Finished ${task.name} (${Number((t[0] * 1000) + (t[1] / 1000000)).toFixed(3)}ms)`);
+    console.tag('queue').log('Finished ' + task.name + ' (' + Number(t[0] * 1000 + t[1] / 1000000).toFixed(3) + 'ms)');
     callback.apply(queue, arguments);
   }
 
@@ -89,9 +91,9 @@ queue.drain = function () {
   console.tag('queue').log('All items have been processed');
 };
 
-var defer = (func, name) => {
-  queue.push({func, name});
-  console.tag('queue').log(`Deferred task ${name}, Queue ${queue.length()}`);
+var defer = function defer(func, name) {
+  queue.push({func: func, name: name});
+  console.tag('queue').log('Deferred task ' + name + ', Queue ' + queue.length());
 };
 
 function exec(p, cb, opts) {
@@ -100,38 +102,35 @@ function exec(p, cb, opts) {
   var args = opts.args || [];
   args = Array.isArray(args) ? args : [args];
 
-  p += ' ' + esc(args)
-          .replace(/\n/g, '\\n')
-          .replace(/\r/g, '\\r')
-          .replace(/\t/g, '\\t')
-          .replace(/\r/g, '\\r')
-          .replace(/"/g, '\\"');
+  p += ' ' + esc(args).replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t').replace(/\r/g, '\\r').replace(/"/g, '\\"');
 
   console.tag('exec').info(p);
 
   if (typeof cb !== 'function') {
-    var res = child.spawnSync(WIN32 ? 'cmd' : 'bash', Object.assign(opts, {input: p}));
+    var res = child.spawnSync(WIN32 ? 'cmd' : 'bash',  [], Object.assign(opts, {input: p}));
     return {code: res.status, output: res.stdout.toString('utf8') + res.stderr.toString('utf8')};
   }
 
   var out = '';
-  var terminal = child.spawn(WIN32 ? 'cmd' : 'bash', Object.assign(opts, {env: env, encoding: 'buffer'}));
+  var terminal = child.spawn(WIN32 ? 'cmd' : 'bash', [], Object.assign(opts, {encoding: 'buffer'}));
 
-  terminal.stdout.on('data', data => {
+  terminal.stdout.on('data', function (data) {
     data = data.toString('utf8');
     if (!data.trim()) return;
     console.tag('exec').log(data);
     out += data;
   });
 
-  terminal.stderr.on('data', data => {
+  terminal.stderr.on('data', function (data) {
     data = data.toString('utf8');
     if (!data.trim()) return;
     console.tag('exec').log(data);
     out += data;
   });
 
-  terminal.on('exit', code => cb(code, out));
+  terminal.on('exit', function (code) {
+    return cb(code, out);
+  });
 
   setTimeout(function () {
     terminal.stdin.write(p + '\n');
@@ -238,22 +237,12 @@ function env(ctx, event) {
   var config = configuration(ctx);
   var mode = ctx.mode || 'release';
 
-  var x = Object.assign({},
-      process.env, {
-        BRANCHOFF_PORT: ctx.port,
-        BRANCHOFF_CWD: ctx.dir,
-        BRANCHOFF_BRANCH: ctx.branch,
-        BRANCHOFF_NAME: ctx.id
-      },
-      selectn('env.default', config),
-      selectn(`env.${event}`, config),
-      selectn(`env.mode.${mode}`, config),
-      selectn(`env.mode.${mode}@${event}`, config),
-      selectn(`env.branch.default`, config),
-      selectn(`env.branch.${ctx.branch}`, config),
-      selectn(`env.branch.${ctx.branch}@${event}`, config),
-      selectn(`env.branch.${ctx.branch}#${mode}`, config),
-      selectn(`env.branch.${ctx.branch}#${mode}@${event}`, config));
+  var x = Object.assign({}, process.env, {
+    BRANCHOFF_PORT: ctx.port,
+    BRANCHOFF_CWD: ctx.dir,
+    BRANCHOFF_BRANCH: ctx.branch,
+    BRANCHOFF_NAME: ctx.id
+  }, selectn('env.default', config), selectn('env.' + event, config), selectn('env.mode.' + mode, config), selectn('env.mode.' + mode + '@' + event, config), selectn('env.branch.default', config), selectn('env.branch.' + ctx.branch, config), selectn('env.branch.' + ctx.branch + '@' + event, config), selectn('env.branch.' + ctx.branch + '#' + mode, config), selectn('env.branch.' + ctx.branch + '#' + mode + '@' + event, config));
 
   console.tag('env').log(x);
 
@@ -268,7 +257,7 @@ function trigger(ctx, event, cb, args) {
   try {
     if (fs.statSync(fp)) {
       var runScript = ['cd', ctx.dir, '&&', '.', './branchoff@' + event].join(' ');
-      return exec(runScript, cb, {args, env: env(ctx, event)});
+      return exec(runScript, cb, {args: args, env: env(ctx, event)});
     }
   } catch (e) {
     console.tag('trigger').error(e);
@@ -279,8 +268,7 @@ function trigger(ctx, event, cb, args) {
 
 function create(ctx, cb) {
   var createDir = ["mkdir -p", ctx.cwd].join(" ");
-  var clone = ["cd", ctx.cwd, "&& git config --global credential.helper store && git clone -b " + ctx.branch,
-    "--single-branch", ctx.uri, ctx.dir].join(" ");
+  var clone = ["cd", ctx.cwd, "&& git config --global credential.helper store && git clone -b " + ctx.branch, "--single-branch", ctx.uri, ctx.dir].join(" ");
 
   exec([createDir, clone].join(' && '), cb);
 }
@@ -310,7 +298,7 @@ function destroy(ctx, cb) {
       return close(err);
     }
 
-    pm2.delete(name, err => {
+    pm2['delete'](name, function (err) {
       if (err) {
         console.tag('destroy').error(err);
       }
@@ -334,7 +322,7 @@ function configuration(ctx) {
   var config = {};
 
   try {
-    config = JSON.parse(fs.readFileSync(path.join(ctx.dir, "branchoff@config"), {encoding: 'utf8'}))
+    config = JSON.parse(fs.readFileSync(path.join(ctx.dir, "branchoff@config"), {encoding: 'utf8'}));
   } catch (e) {
     console.tag('start').error("Reverting to default config");
     console.tag('start').error(e);
@@ -364,7 +352,7 @@ function start(ctx, cb) {
     var name = [ctx.port, ctx.branch, ctx.mode].join('-');
 
     config = extend(true, {}, {
-      script: `./bin/www`,
+      script: './bin/www',
       restart_delay: 10000,
       watch: false,
       min_uptime: "20s",
@@ -372,9 +360,9 @@ function start(ctx, cb) {
       env: {}
     }, selectn('pm2', config), {
       name: name,
-      cwd: `${ctx.dir}`,
-      error_file: `${ctx.dir}/out.log`,
-      out_file: `${ctx.dir}/out.log`,
+      cwd: '' + ctx.dir,
+      error_file: ctx.dir + '/out.log',
+      out_file: ctx.dir + '/out.log',
       env: env(ctx, 'start')
     });
 
@@ -388,9 +376,9 @@ function start(ctx, cb) {
 
     console.tag('start').log(config);
 
-    pm2.delete(name, () => {
+    pm2['delete'](name, function () {
       console.tag('start').log('PM2 delete');
-      pm2.start(config, err => {
+      pm2.start(config, function (err) {
         if (err) {
           console.tag('start').error(err);
           return cb(err);

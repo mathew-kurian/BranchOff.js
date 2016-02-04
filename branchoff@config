@@ -1,5 +1,5 @@
 {
-  "main": "node ./test.js",
+  "main": "which node; node ./test.js",
   "preferPort": 7000,
   "env": {
     "default": {

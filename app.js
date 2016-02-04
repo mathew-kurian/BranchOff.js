@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+'use strict';
 
 var express = require('express');
 var Hook = require('github-webhook-handler');
@@ -19,7 +20,7 @@ var conf = core.conf;
 // create: <clone{test}, test, fail> OR <clone{test}, test, ok, clone, run>
 // update: <clone{test}, test, start, fail> OR <clone{test}, test, start, ok, pull, start>
 var Pipeline = {
-  restore: function (then, opts) {
+  restore: function restore(then, opts) {
     var self = this;
 
     opts = opts || {};
@@ -33,82 +34,118 @@ var Pipeline = {
           if (ctx.mode === 'test') {
             self.destroy(ctx.uri, ctx.branch, null, ctx);
           } else {
-            defer(cb=> core.create(ctx, cb), 'restore#create');
-            defer(cb=> core.trigger(ctx, 'create', cb), 'restore#trigger -> create');
-            defer(cb=> core.start(ctx, cb), 'restore#start');
+            defer(function (cb) {
+              return core.create(ctx, cb);
+            }, 'restore#create');
+            defer(function (cb) {
+              return core.trigger(ctx, 'create', cb);
+            }, 'restore#trigger -> create');
+            defer(function (cb) {
+              return core.start(ctx, cb);
+            }, 'restore#start');
             defer(then, 'restore#callback');
           }
         })(system[id], id);
       }
     }
   },
-  create: function (uri, branch, then, opts) {
+  create: function create(uri, branch, then, opts) {
     opts = opts || {};
 
-    this.test(uri, branch, err => {
+    this.test(uri, branch, function (err) {
       if (err) {
         console.tag('update').log('Tests failed! Skipping deployment');
       } else {
-        var ctx = core.resolve(uri, branch, {scale: opts.scale});
+        var ctx = core.resolve(uri, branch, { scale: opts.scale });
         console.tag('update').log('Tests passed! Deploying actual branch');
 
-        defer(cb=> core.create(ctx, cb), 'create#create');
-        defer(cb=> core.trigger(ctx, 'create', cb), 'create#trigger -> create');
-        defer(cb=> core.start(ctx, cb), 'create#start');
+        defer(function (cb) {
+          return core.create(ctx, cb);
+        }, 'create#create');
+        defer(function (cb) {
+          return core.trigger(ctx, 'create', cb);
+        }, 'create#trigger -> create');
+        defer(function (cb) {
+          return core.start(ctx, cb);
+        }, 'create#start');
       }
 
       defer(then, 'create#callback');
     }, opts);
   },
-  test: function (uri, branch, then, opts) {
+  test: function test(uri, branch, then, opts) {
+    var _this = this;
+
     opts = opts || {};
 
-    var ctx = core.resolve(uri, branch, {mode: 'test', scale: opts.scale});
+    var ctx = core.resolve(uri, branch, { mode: 'test', scale: opts.scale });
 
     console.tag('test').log(ctx, opts);
 
-    defer(cb=> core.create(ctx, cb), 'test#create');
-    defer(cb=> core.trigger(ctx, 'create', cb, [ctx.mode]), 'test#trigger -> create');
-    defer(cb=> core.start(ctx, cb), 'test#start');
-    defer(cb=> core.trigger(ctx, 'test', (code, output)=> {
-      console.tag('test').log({code: code, output: output});
-      console.tag('test').log(core.trigger(ctx, code ? 'fail' : 'pass', true, [code, output]));
+    defer(function (cb) {
+      return core.create(ctx, cb);
+    }, 'test#create');
+    defer(function (cb) {
+      return core.trigger(ctx, 'create', cb, [ctx.mode]);
+    }, 'test#trigger -> create');
+    defer(function (cb) {
+      return core.start(ctx, cb);
+    }, 'test#start');
+    defer(function (cb) {
+      return core.trigger(ctx, 'test', function (code, output) {
+        console.tag('test').log({ code: code, output: output });
+        console.tag('test').log(core.trigger(ctx, code ? 'fail' : 'pass', true, [code, output]));
 
-      this.destroy(ctx.uri, ctx.branch, null, ctx);
-      cb();
+        _this.destroy(ctx.uri, ctx.branch, null, ctx);
+        cb();
 
-      defer(() => then(code), 'test#callback');
-    }), 'test#trigger -> test');
+        defer(function () {
+          return then(code);
+        }, 'test#callback');
+      });
+    }, 'test#trigger -> test');
   },
-  update: function (uri, branch, then, opts) {
+  update: function update(uri, branch, then, opts) {
     opts = opts || {};
 
-    this.test(uri, branch, err => {
+    this.test(uri, branch, function (err) {
       if (err) {
         console.tag('update').log('Tests failed! Skipping deployment');
       } else {
-        var ctx = core.resolve(uri, branch, {scale: opts.scale});
+        var ctx = core.resolve(uri, branch, { scale: opts.scale });
 
         console.tag('update').log('Tests passed! Deploying actual branch');
 
-        defer(cb=> core.create(ctx, cb), 'update#create');
-        defer(cb=> core.update(ctx, cb), 'update#update');
-        defer(cb=> core.trigger(ctx, 'update', cb), 'update#trigger -> update');
-        defer(cb=> core.start(ctx, cb), 'update#start');
+        defer(function (cb) {
+          return core.create(ctx, cb);
+        }, 'update#create');
+        defer(function (cb) {
+          return core.update(ctx, cb);
+        }, 'update#update');
+        defer(function (cb) {
+          return core.trigger(ctx, 'update', cb);
+        }, 'update#trigger -> update');
+        defer(function (cb) {
+          return core.start(ctx, cb);
+        }, 'update#start');
       }
 
       defer(then, 'update#callback');
     }, opts);
   },
-  destroy: function (uri, branch, then, opts) {
+  destroy: function destroy(uri, branch, then, opts) {
     opts = opts || {};
 
-    var ctx = core.resolve(uri, branch, {mode: opts.mode});
+    var ctx = core.resolve(uri, branch, { mode: opts.mode });
 
     console.tag('destroy').log(ctx);
 
-    defer(cb=> core.trigger(ctx, 'destroy', cb), 'destroy#trigger -> destroy');
-    defer(cb=> core.destroy(ctx, cb), 'destroy#destroy');
+    defer(function (cb) {
+      return core.trigger(ctx, 'destroy', cb);
+    }, 'destroy#trigger -> destroy');
+    defer(function (cb) {
+      return core.destroy(ctx, cb);
+    }, 'destroy#destroy');
     defer(then, 'destroy#callback');
   }
 };
@@ -163,28 +200,44 @@ function handleGitEvent(event, payload) {
   }
 }
 
-Object.keys(events).forEach(e=> {
+Object.keys(events).forEach(function (e) {
   if (e != '*') {
-    handler.on(e, e => handleGitEvent(e.event, e.payload));
+    handler.on(e, function (e) {
+      return handleGitEvent(e.event, e.payload);
+    });
   }
 });
 
-handler.on('error', err=> console.error('Error:', err.message));
+handler.on('error', function (err) {
+  return console.error('Error:', err.message);
+});
 
 app.use(console.middleware('express'));
 app.use('/scribe', console.viewer());
-app.get('/test', (req, res)=> res.send({ok: true}));
+app.get('/test', function (req, res) {
+  return res.send({ ok: true });
+});
 app.post('/github/postreceive', handler);
 app.set('view engine', 'jade');
-app.use(bodyParser.urlencoded({extended: false}));
+app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
-app.get('/', (req, res)=> res.render('index'));
-app.post('/ecosystem', (req, res)=> res.json(core.ecosystem()));
-app.get('/ecosystem', (req, res)=> res.render('ecosystem', {ecosystem: core.ecosystem()}));
-app.get('/destroy', (req, res)=> res.redirect('/'));
-app.get('/deploy', (req, res)=> res.redirect('/'));
+app.get('/', function (req, res) {
+  return res.render('index');
+});
+app.post('/ecosystem', function (req, res) {
+  return res.json(core.ecosystem());
+});
+app.get('/ecosystem', function (req, res) {
+  return res.render('ecosystem', { ecosystem: core.ecosystem() });
+});
+app.get('/destroy', function (req, res) {
+  return res.redirect('/');
+});
+app.get('/deploy', function (req, res) {
+  return res.redirect('/');
+});
 
-app.post('/destroy', (req, res)=> {
+app.post('/destroy', function (req, res) {
   var uri = req.body.uri;
   var branch = req.body.branch || 'master';
   var mode = req.body.mode;
@@ -198,12 +251,12 @@ app.post('/destroy', (req, res)=> {
 
   console.tag('/destroy').log(req.body);
 
-  Pipeline.destroy(uri, branch, null, {mode: mode});
+  Pipeline.destroy(uri, branch, null, { mode: mode });
 
   res.redirect('/ecosystem');
 });
 
-app.post('/deploy', (req, res)=> {
+app.post('/deploy', function (req, res) {
   var uri = req.body.uri;
   var branch = req.body.branch || 'master';
   var mode = req.body.mode;
@@ -220,69 +273,64 @@ app.post('/deploy', (req, res)=> {
 
   console.tag('/deploy').log(req.body);
 
-  Pipeline[func](uri, branch, null, {scale: scale, mode: mode});
+  Pipeline[func](uri, branch, null, { scale: scale, mode: mode });
 
   res.redirect('/ecosystem');
 });
 
 if (require.main === module && process.env.started_as_module == true) {
-  app.listen(conf.port, ()=> console.tag('app').log('Listening to port ' + conf.port));
+  app.listen(conf.port, function () {
+    return console.tag('app').log('Listening to port ' + conf.port);
+  });
   Pipeline.restore();
 } else {
   // handle arguments
-  program
-      .version(pkg.version)
-      .option('-p, --pipeline <n>', 'Use pipeline')
-      .option('-s, --start <n>', 'Start port', parseInt, 3000)
-      .option('-e, --end <n>', 'End port', parseInt, 4000);
+  program.version(pkg.version).option('-p, --pipeline <n>', 'Use pipeline').option('-s, --start <n>', 'Start port', parseInt, 3000).option('-e, --end <n>', 'End port', parseInt, 4000);
 
-  program
-      .command('ignite')
-      .action(function () {
-        var uri = core.exec('git config --get remote.origin.url').output.trim();
-        var branch = core.exec('git rev-parse --abbrev-ref HEAD').output.trim();
+  program.command('ignite').action(function () {
+    var uri = core.exec('git config --get remote.origin.url').output.trim();
+    var branch = core.exec('git rev-parse --abbrev-ref HEAD').output.trim();
 
-        if (!uri && !branch) {
-          throw new Error('Not a valid git repo?', uri, branch)
-        }
+    if (!uri && !branch) {
+      throw new Error('Not a valid git repo?', uri, branch);
+    }
 
-        var dir = process.cwd();
-        var ctx = core.resolve(uri, branch);
+    var dir = process.cwd();
+    var ctx = core.resolve(uri, branch);
 
-        // NOTE override cwd
-        ctx.dir = dir;
-        ctx.mode = 'local';
+    // NOTE override cwd
+    ctx.dir = dir;
+    ctx.mode = 'local';
 
-        core.save(ctx);
+    core.save(ctx);
 
-        var config = core.configuration(ctx);
-        var script = config.main || selectn('pm2.script', config);
+    var config = core.configuration(ctx);
+    var script = config.main || selectn('pm2.script', config);
 
-        if (!script) {
-          throw new Error('Main script is not defined in branchoff@config');
-        }
+    if (!script) {
+      throw new Error('Main script is not defined in branchoff@config');
+    }
 
-        console.log(core.env(ctx, 'start'));
+    console.log(core.env(ctx, 'start'));
 
-        var terminal = core.exec(['cd', dir, '&&', script].join(' '),
-            ()=>0, {cwd: dir, env: core.env(ctx, 'start')});
+    var terminal = core.exec(['cd', dir, '&&', script].join(' '), function () {}, { cwd: dir, env: core.env(ctx, 'start') });
 
-        terminal.stdout.on('data', data=> {
-          data = data.toString('utf8');
-          process.stdout.write(data + '\n');
-        });
+    terminal.stdout.on('data', function (data) {
+      data = data.toString('utf8');
+      process.stdout.write(data);
+    });
 
-        terminal.stderr.on('data', data=> {
-          data = data.toString('utf8');
-          process.stderr.write(data + '\n');
-        });
+    terminal.stderr.on('data', function (data) {
+      data = data.toString('utf8');
+      process.stderr.write(data);
+    });
 
-        terminal.on('exit', code=> {
-          console.tag('ignite').log('Exit code', code).then(() =>
-              process.exit(code));
-        });
+    terminal.on('exit', function (code) {
+      console.tag('ignite').log('Exit code', code).then(function () {
+        return process.exit(code);
       });
+    });
+  });
 
   program.parse(process.argv);
 }
-
