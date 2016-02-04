@@ -36,6 +36,7 @@ var console = new Scribe(process.pid, {
   mongo: false,
   basePath: 'scribe/',
   socketPort: conf.socketPort,
+  socket: process.env.started_as_module == true,
   inspector: {
     pre: false,
     callsite: false
@@ -93,8 +94,10 @@ var defer = (func, name) => {
   console.tag('queue').log(`Deferred task ${name}, Queue ${queue.length()}`);
 };
 
-function exec(p, cb, args, env) {
-  args = args || [];
+function exec(p, cb, opts) {
+  opts = opts || {};
+
+  var args = opts.args || [];
   args = Array.isArray(args) ? args : [args];
 
   p += ' ' + esc(args)
@@ -107,12 +110,12 @@ function exec(p, cb, args, env) {
   console.tag('exec').info(p);
 
   if (typeof cb !== 'function') {
-    var res = child.spawnSync(WIN32 ? 'cmd' : 'bash', {input: p, env: env});
+    var res = child.spawnSync(WIN32 ? 'cmd' : 'bash', Object.assign(opts, {input: p}));
     return {code: res.status, output: res.stdout.toString('utf8') + res.stderr.toString('utf8')};
   }
 
   var out = '';
-  var terminal = child.spawn(WIN32 ? 'cmd' : 'bash', {env: env});
+  var terminal = child.spawn(WIN32 ? 'cmd' : 'bash', Object.assign(opts, {env: env, encoding: 'buffer'}));
 
   terminal.stdout.on('data', data => {
     data = data.toString('utf8');
@@ -131,11 +134,11 @@ function exec(p, cb, args, env) {
   terminal.on('exit', code => cb(code, out));
 
   setTimeout(function () {
-    console.tag('exec').log('Open terminal');
     terminal.stdin.write(p + '\n');
-    console.tag('exec').log('Close terminal');
     terminal.stdin.end();
   }, 1000);
+
+  return terminal;
 }
 
 function available(port) {
@@ -265,7 +268,7 @@ function trigger(ctx, event, cb, args) {
   try {
     if (fs.statSync(fp)) {
       var runScript = ['cd', ctx.dir, '&&', '.', './branchoff@' + event].join(' ');
-      return exec(runScript, cb, args, env(ctx, event));
+      return exec(runScript, cb, {args, env: env(ctx, event)});
     }
   } catch (e) {
     console.tag('trigger').error(e);
@@ -331,7 +334,7 @@ function configuration(ctx) {
   var config = {};
 
   try {
-    config = JSON.parse(fs.readFileSync(ctx.dir + `/branchoff@config`, {encoding: 'utf8'}))
+    config = JSON.parse(fs.readFileSync(path.join(ctx.dir, "branchoff@config"), {encoding: 'utf8'}))
   } catch (e) {
     console.tag('start').error("Reverting to default config");
     console.tag('start').error(e);
@@ -413,8 +416,10 @@ module.exports = {
   create: create,
   update: update,
   destroy: destroy,
+  env: env,
   defer: defer,
   available: available,
+  configuration: configuration,
   save: save,
   conf: conf,
   console: console

@@ -1,4 +1,5 @@
 {
+  "main": "node ./test.js",
   "preferPort": 7000,
   "env": {
     "default": {
@@ -33,7 +34,7 @@
       },
       "master@test": {
         "FOOTOO": "BARTOO"
-      },
+      }
     }
   },
   "pm2": {

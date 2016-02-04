@@ -1,8 +1,13 @@
+#!/usr/bin/env node
+
 var express = require('express');
 var Hook = require('github-webhook-handler');
 var events = require('github-webhook-handler/events');
 var bodyParser = require('body-parser');
 var core = require('./core');
+var program = require('commander');
+var pkg = require('./package.json');
+var selectn = require('selectn');
 
 var app = express();
 var handler = Hook({});
@@ -220,8 +225,63 @@ app.post('/deploy', (req, res)=> {
   res.redirect('/ecosystem');
 });
 
-app.listen(conf.port, ()=> console.tag('app').log('Listening to port ' + conf.port));
-
-if (require.main === module) {
+if (require.main === module && process.env.started_as_module == true) {
+  app.listen(conf.port, ()=> console.tag('app').log('Listening to port ' + conf.port));
   Pipeline.restore();
+} else {
+  // handle arguments
+  program
+      .version(pkg.version)
+      .option('-p, --pipeline <n>', 'Use pipeline')
+      .option('-s, --start <n>', 'Start port', parseInt, 3000)
+      .option('-e, --end <n>', 'End port', parseInt, 4000);
+
+  program
+      .command('ignite')
+      .action(function () {
+        var uri = core.exec('git config --get remote.origin.url').output.trim();
+        var branch = core.exec('git rev-parse --abbrev-ref HEAD').output.trim();
+
+        if (!uri && !branch) {
+          throw new Error('Not a valid git repo?', uri, branch)
+        }
+
+        var dir = process.cwd();
+        var ctx = core.resolve(uri, branch);
+
+        // NOTE override cwd
+        ctx.dir = dir;
+        ctx.mode = 'serial';
+
+        core.save(ctx);
+
+        var config = core.configuration(ctx);
+        var script = config.main || selectn('pm2.script', config);
+
+        if (!script) {
+          throw new Error('Main script is not defined in branchoff@config');
+        }
+
+        console.log(core.env(ctx, 'start'));
+
+        var terminal = core.exec(['cd', dir, '&&', script].join(' '), ()=>0, {cwd: dir, env: core.env(ctx, 'start')});
+
+        terminal.stdout.on('data', data=> {
+          data = data.toString('utf8');
+          process.stdout.write(data + '\n');
+        });
+
+        terminal.stderr.on('data', data=> {
+          data = data.toString('utf8');
+          process.stderr.write(data + '\n');
+        });
+
+        terminal.on('exit', code=> {
+          console.tag('ignite').log('Exit code', code).then(() =>
+              process.exit(code));
+        });
+      });
+
+  program.parse(process.argv);
 }
+
