@@ -251,7 +251,7 @@ if (require.main === module && process.env.started_as_module == true) {
 
         // NOTE override cwd
         ctx.dir = dir;
-        ctx.mode = 'serial';
+        ctx.mode = 'local';
 
         core.save(ctx);
 
@@ -264,7 +264,8 @@ if (require.main === module && process.env.started_as_module == true) {
 
         console.log(core.env(ctx, 'start'));
 
-        var terminal = core.exec(['cd', dir, '&&', script].join(' '), ()=>0, {cwd: dir, env: core.env(ctx, 'start')});
+        var terminal = core.exec(['cd', dir, '&&', script].join(' '),
+            ()=>0, {cwd: dir, env: core.env(ctx, 'start')});
 
         terminal.stdout.on('data', data=> {
           data = data.toString('utf8');
