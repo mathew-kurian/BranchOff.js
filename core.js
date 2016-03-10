@@ -451,7 +451,7 @@ function start(ctx, cb) {
   }, selectn('pm2', config), {
     name: name,
     cwd: ctx.dir,
-    env: env(ctx, 'start')
+    env: extend(env(ctx, 'start'), {BRANCHOFF_PID: Date.now() + Math.floor(Math.random() * 50)})
   });
 
   config = extend(true, config, {
