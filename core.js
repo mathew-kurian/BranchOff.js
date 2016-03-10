@@ -439,6 +439,7 @@ function start(ctx, cb) {
 
   var config = configuration(ctx);
   var name = [ctx.port, ctx.branch, ctx.mode].join('-');
+  var vpid = Math.floor(Math.random() * 50);
 
   config = extend(true, {}, {
     script: './bin/www',
@@ -451,7 +452,7 @@ function start(ctx, cb) {
   }, selectn('pm2', config), {
     name: name,
     cwd: ctx.dir,
-    env: extend(env(ctx, 'start'), {BRANCHOFF_PID: Date.now() + Math.floor(Math.random() * 50)})
+    env: extend(env(ctx, 'start'), {BRANCHOFF_VPID: name + vpid})
   });
 
   config = extend(true, config, {
