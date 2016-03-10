@@ -439,7 +439,7 @@ function start(ctx, cb) {
 
   var config = configuration(ctx);
   var name = [ctx.port, ctx.branch, ctx.mode].join('-');
-  var vpid = Math.floor(Math.random() * 50);
+  var vpid = Math.floor(Math.random() * 5000);
 
   config = extend(true, {}, {
     script: './bin/www',
