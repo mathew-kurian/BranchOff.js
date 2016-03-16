@@ -1,21 +1,21 @@
 {
   "name": "branch-off",
-  "version": "2.10.0",
+  "version": "2.31.0",
   "description": "Auto branch-deployment with Github webhooks",
   "main": "app.js",
   "dependencies": {
-    "async": "^1.5.2",
-    "basic-auth": "^1.0.3",
-    "body-parser": "^1.14.2",
-    "express": "^4.13.4",
-    "extend": "^3.0.0",
+    "async": "1.5.2",
+    "basic-auth": "1.0.3",
+    "body-parser": "1.14.2",
+    "express": "4.13.4",
+    "extend": "3.0.0",
     "github-webhook-handler": "git://github.com/bluejamesbond/github-webhook-handler",
-    "jade": "^1.11.0",
+    "jade": "1.11.0",
     "pm2": "latest",
     "pmx": "beta",
-    "scribe-js": "git://github.com/bluejamesbond/Scribe.js.git#dev",
-    "selectn": "^1.0.4",
-    "shell-escape": "^0.2.0"
+    "scribe-js": "3.0.0-alpha.10",
+    "selectn": "1.0.4",
+    "shell-escape": "0.2.0"
   },
   "repository": {
     "type": "git",
@@ -29,12 +29,13 @@
     "dir": "",
     "uris": "",
     "branches": "",
+    "ignoreBranches": "",
     "maxInstances": -1,
     "user": "build",
     "pass": "build"
   },
   "scripts": {
-    "tests": "echo 'PASSED!'"
+    "test": "echo 'PASSED!'"
   },
   "apps": [
     {

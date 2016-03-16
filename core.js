@@ -14,7 +14,7 @@ var selectn = require('selectn');
 
 var WIN32 = os.platform() === 'win32';
 
-var conf = pmx.initModule({
+var pmxOpts = {
   widget: {
     type: 'generic',
     theme: ['#111111', '#1B2228', '#807C7C', '#807C7C'],
@@ -31,39 +31,56 @@ var conf = pmx.initModule({
       main_probes: ['Port', 'Start', 'End']
     }
   }
-});
+};
 
-var console = new Scribe(process.pid, {
-  name: 'BranchOff',
-  mongo: false,
-  basePath: 'scribe/',
-  socketPort: conf.socketPort,
-  socket: !!process.env.pmx_module,
-  inspector: {
-    pre: false,
-    callsite: false
+var conf = pmx.initModule(pmxOpts);
+
+var scribeOpts = {
+  "app": 'branch-off',
+  "id": process.pid,
+  "expose": {
+    "default": [
+      "socket",
+      "bash"
+    ],
+    "express": [
+      "express-socket",
+      "express-bash"
+    ]
   },
-  web: {
-    router: {
-      username: 'build',
-      password: 'build',
-      authentication: false,
-      sessionSecret: 'scribe-session',
-      useBodyParser: true,
-      useSession: true
+  "expose/pipeline": {
+    "socket": [
+      "transform/ErrorExtractor",
+      "transform/ToJSON2",
+      "transform/FullTextSerialize",
+      "writer/SocketIO"
+    ],
+    "express-socket": [
+      "transform/ExpressExtractor",
+      "transform/ErrorExtractor",
+      "transform/ToJSON2",
+      "transform/FullTextSerialize",
+      "writer/SocketIO"
+    ]
+  },
+  "module": {
+    'transform/Inspector': {
+      callsite: false
     },
-    client: {
-      port: conf.port,
-      socketPorts: [conf.socketPort],
-      exposed: {
-        all: {label: 'all', query: {expose: {$exists: true}}},
-        queue: {label: 'queue', query: {'transient.tags': {$in: ['queue']}}}
-      }
+    "writer/SocketIO": {
+      "port": conf.socketPort
+    },
+    "router/Viewer/client": {
+      "background": "#111111",
+      "socketPorts": [
+        conf.socketPort
+      ]
     }
   },
-  native: {},
-  debug: false
-});
+  "debug": false
+};
+
+var console = Scribe.create(scribeOpts);
 
 var queue = async.queue(function (task, callback) {
   var b = process.hrtime();
@@ -103,7 +120,12 @@ function exec(p, cb, opts) {
   var args = opts.args || [];
   args = Array.isArray(args) ? args : [args];
 
-  p += ' ' + esc(args).replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t').replace(/\r/g, '\\r').replace(/"/g, '\\"');
+  p += ' ' + esc(args)
+      .replace(/\n/g, '\\n')
+      .replace(/\r/g, '\\r')
+      .replace(/\t/g, '\\t')
+      .replace(/\r/g, '\\r')
+      .replace(/"/g, '\\"');
 
   console.tag('exec').info(p);
 
@@ -248,31 +270,31 @@ function env(ctx, event, extra) {
   var mode = ctx.mode || 'release';
 
   var x = Object.assign({}, process.env, {
-        BRANCHOFF_PORT: ctx.port,
-        BRANCHOFF_CWD: ctx.dir,
-        BRANCHOFF_BRANCH: ctx.branch,
-        BRANCHOFF_MODE: ctx.mode || 'release',
-        BRANCHOFF_NAME: ctx.id,
-        BRANCHOFF_SCALE: ctx.instances, // FIXME
-        BRANCHOFF_EXEC_MODE: ctx.execMode // FIXME
-      }, selectn('env.default', config),
-      selectn('env.' + event, config),
-      selectn('env.mode.default', config),
-      selectn('env.mode.' + mode, config),
-      selectn('env.mode.' + mode + '@' + event, config),
-      selectn('env.branch.default', config),
-      selectn('env.branch.' + ctx.branch, config),
-      selectn('env.branch.' + ctx.branch + '@' + event, config),
-      selectn('env.branch.' + ctx.branch + '#' + mode, config),
-      selectn('env.branch.' + ctx.branch + '#' + mode, config),
-      selectn('env.branch.' + ctx.branch + '#' + mode + '@' + event, config),
-      selectn('env.branch.' + ctx.uri, config),
-      selectn('env.branch.' + ctx.uri + '^' + ctx.branch, config),
-      selectn('env.branch.' + ctx.uri + '^' + ctx.branch + '@' + event, config),
-      selectn('env.branch.' + ctx.uri + '^' + ctx.branch + '#' + mode, config),
-      selectn('env.branch.' + ctx.uri + '^' + ctx.branch + '#' + mode, config),
-      selectn('env.branch.' + ctx.uri + '^' + ctx.branch + '#' + mode + '@' + event, config),
-      extra);
+                          BRANCHOFF_PORT: ctx.port,
+                          BRANCHOFF_CWD: ctx.dir,
+                          BRANCHOFF_BRANCH: ctx.branch,
+                          BRANCHOFF_MODE: ctx.mode || 'release',
+                          BRANCHOFF_NAME: ctx.id,
+                          BRANCHOFF_SCALE: ctx.instances, // FIXME
+                          BRANCHOFF_EXEC_MODE: ctx.execMode // FIXME
+                        }, selectn('env.default', config),
+                        selectn('env.' + event, config),
+                        selectn('env.mode.default', config),
+                        selectn('env.mode.' + mode, config),
+                        selectn('env.mode.' + mode + '@' + event, config),
+                        selectn('env.branch.default', config),
+                        selectn('env.branch.' + ctx.branch, config),
+                        selectn('env.branch.' + ctx.branch + '@' + event, config),
+                        selectn('env.branch.' + ctx.branch + '#' + mode, config),
+                        selectn('env.branch.' + ctx.branch + '#' + mode, config),
+                        selectn('env.branch.' + ctx.branch + '#' + mode + '@' + event, config),
+                        selectn('env.branch.' + ctx.uri, config),
+                        selectn('env.branch.' + ctx.uri + '^' + ctx.branch, config),
+                        selectn('env.branch.' + ctx.uri + '^' + ctx.branch + '@' + event, config),
+                        selectn('env.branch.' + ctx.uri + '^' + ctx.branch + '#' + mode, config),
+                        selectn('env.branch.' + ctx.uri + '^' + ctx.branch + '#' + mode, config),
+                        selectn('env.branch.' + ctx.uri + '^' + ctx.branch + '#' + mode + '@' + event, config),
+                        extra);
 
   //console.tag('env').log(x);
 
@@ -299,9 +321,9 @@ function trigger(ctx, event, cb, args, opts) {
 
   try {
     var fp = selectExists([
-      [path.join(ctx.dir, 'branchoff@' + event), ctx.dir],
-      [path.join(ctx.dir, ctx.config.hooksDir || 'hooks', event), path.join(ctx.dir, ctx.config.hooksDir || 'hooks')]
-    ]);
+                            [path.join(ctx.dir, 'branchoff@' + event), ctx.dir],
+                            [path.join(ctx.dir, ctx.config.hooksDir || 'hooks', event), path.join(ctx.dir, ctx.config.hooksDir || 'hooks')]
+                          ]);
 
     var runScript = ['cd', fp[1], '&&', '.', fp[0]].join(' ');
 
@@ -315,7 +337,8 @@ function trigger(ctx, event, cb, args, opts) {
 
 function create(ctx, cb, commit) {
   var createDir = ["mkdir -p", ctx.cwd].join(" ");
-  var clone = ["cd", ctx.cwd, "&& git config --global credential.helper store && git clone -b " + ctx.branch, "--single-branch", ctx.uri, ctx.dir].join(" ");
+  var clone = ["cd", ctx.cwd, "&& git config --global credential.helper store && git clone -b" + ctx.branch, "--depth 5",
+    "--single-branch", ctx.uri, ctx.dir].join(" ");
   var extra = 'pwd';
 
   commit = commit || ctx.commit;
@@ -330,7 +353,8 @@ function create(ctx, cb, commit) {
 function update(ctx, cb, commit) {
   configuration(ctx);
 
-  var pull = ["cd", ctx.dir, "&& git config credential.helper store && git reset --hard && git pull --rebase"].join(" ");
+  var pull = ["cd", ctx.dir, "&& git config credential.helper store && git reset --hard" +
+  " origin/" + ctx.branch, "&& git checkout " + ctx.branch, "&& git pull --rebase"].join(" ");
   var extra = ' && pwd';
 
   commit = commit || ctx.commit;
@@ -410,17 +434,21 @@ function configuration(ctx) {
   }
 
   ctx.config = config;
+  ctx._port = ctx._port || [];
+  if (ctx.port) {
+    ctx._port.push(ctx.port);
+  }
 
   var mode = ctx.mode || 'release';
-  var port =
-      selectn('preferPort.branch.' + ctx.uri + '^' + ctx.branch + '#' + mode, config) ||
-      selectn('preferPort.branch.' + ctx.uri + '^' + ctx.branch, config) ||
-      selectn('preferPort.branch.' + ctx.branch + '#' + mode, config) ||
-      selectn('preferPort.branch.' + ctx.branch, config) ||
-      selectn('preferPort.branch.' + ctx.uri, config) ||
-      selectn('preferPort.branch.default', config) ||
-      selectn('preferPort.mode.' + mode, config) ||
-      selectn('preferPort', config);
+  var port = // redeploy for preferPort
+    selectn('preferPort.branch.' + ctx.uri + '^' + ctx.branch + '#' + mode, config) ||
+    selectn('preferPort.branch.' + ctx.uri + '^' + ctx.branch, config) ||
+    selectn('preferPort.branch.' + ctx.branch + '#' + mode, config) ||
+    selectn('preferPort.branch.' + ctx.branch, config) ||
+    selectn('preferPort.branch.' + ctx.uri, config) ||
+    selectn('preferPort.branch.default', config) ||
+    selectn('preferPort.mode.' + mode, config) ||
+    selectn('preferPort', config);
 
   // FIXME
   ctx.instances = selectn('pm2.instances', config) || ctx.scale;
@@ -450,10 +478,10 @@ function start(ctx, cb) {
     error_file: ctx.dir + '/out.log',
     out_file: ctx.dir + '/out.log'
   }, selectn('pm2', config), {
-    name: name,
-    cwd: ctx.dir,
-    env: extend(env(ctx, 'start'), {BRANCHOFF_VPID: name + vpid})
-  });
+                    name: name,
+                    cwd: ctx.dir,
+                    env: extend(env(ctx, 'start'), {BRANCHOFF_VPID: name + vpid})
+                  });
 
   config = extend(true, config, {
     exec_mode: ctx.execMode,
@@ -471,8 +499,17 @@ function start(ctx, cb) {
 
     console.tag('start').log('PM2 connected');
 
-    pm2.delete(name, function () {
-      console.tag('start').log('PM2 delete');
+    async.each((Array.isArray(ctx._port) ? ctx._port.map(function (_port) {
+      return [_port, ctx.branch, ctx.mode].join('-');
+    }) : []).concat(name), function (name, callback) {
+      pm2.delete(name, function () {
+        console.tag('start').log('PM2 delete');
+        callback();
+      });
+    }, function () {
+      ctx._port = [];
+      save(ctx);
+
       pm2.start(config, function (err) {
         if (err) {
           console.tag('start').error(err);
@@ -483,24 +520,46 @@ function start(ctx, cb) {
         cb();
       });
     });
+
   });
 }
 
 function accept(uri, branch) {
   if (conf.uris) {
     uri = String(uri).trim();
-    var uris = String(conf.uris).split(',');
+    var uris = String(conf.uris).split(',').map(function (a) {
+      return a.trim();
+    });
     if (uris.indexOf(uri) < 0) {
       return false;
     }
   }
 
+  if (conf.ignoreBranches) {
+    branch = String(branch).trim();
+    var branches = String(conf.ignoreBranches).split(',').map(function (a) {
+      return a.trim();
+    });
+
+    for (var i = 0; i < branches.length; i++) {
+      if (RegExp(branches[i]).test(branch)) {
+        return false;
+      }
+    }
+  }
+
   if (conf.branches) {
     branch = String(branch).trim();
-    var branches = String(conf.branches).split(',');
-    if (branches.indexOf(branch) < 0) {
-      return false;
+    var branches = String(conf.branches).split(',').map(function (a) {
+      return a.trim();
+    });
+    for (var i = 0; i < branches.length; i++) {
+      if (RegExp(branches[i]).test(branch)) {
+        return true;
+      }
     }
+
+    return false;
   }
 
   return true;

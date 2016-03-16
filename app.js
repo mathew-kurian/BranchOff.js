@@ -10,6 +10,7 @@ var core = require('./core');
 var program = require('commander');
 var pkg = require('./package.json');
 var selectn = require('selectn');
+var Scribe = require('scribe-js');
 
 var app = express();
 var handler = Hook({});
@@ -225,8 +226,6 @@ handler.on('error', function (err) {
   return console.error('Error:', err.message);
 });
 
-app.use(console.middleware('express'));
-
 app.post('/github/postreceive', handler);
 
 var authenticate = function (req, res, next) {
@@ -253,7 +252,12 @@ var authenticate = function (req, res, next) {
 };
 
 app.use(authenticate);
-app.use('/scribe', console.viewer());
+
+// express logger
+app.use(new Scribe.Middleware.ExpressRequestLogger(console).getMiddleware());
+
+// viewer
+app.use('/scribe', new Scribe.Router.Viewer(console).getRouter());
 
 app.get('/test', function (req, res) {
   return res.send({ok: true});
@@ -365,12 +369,17 @@ if (require.main === module && process.env.pmx_module) {
          .option('-e, --end <n>', 'End port', parseInt, 4000);
 
 
-  program.command('trigger <event> [mode]').action(function (event, mode) {
-    var ctx = resolveLocal();
+  program.command('trigger <event> [mode] [args...]').action(function (event, mode, args) {
+    var ctx = resolveLocal(mode);
     var config = core.configuration(ctx);
     var script = config.main || config.start || selectn('pm2.script', config);
 
-    var terminal = core.trigger(ctx, event, noop, [mode || ctx.mode], {log: false, stdio: ['pipe', 1, 2]});
+    args = [mode || ctx.mode].concat(args);
+
+    console.tag('manual', 'trigger').log(core.env(ctx, event));
+    console.tag('manual', 'trigger').log(mode, args);
+
+    var terminal = core.trigger(ctx, event, noop, [mode || ctx.mode].concat(args), {log: false, stdio: ['pipe', 1, 2]});
 
     if (!terminal) {
       return process.exit(1);
@@ -392,7 +401,7 @@ if (require.main === module && process.env.pmx_module) {
       throw new Error('Main script is not defined in branchoff@config');
     }
 
-    console.tag('manual-start').log(core.env(ctx, 'start'));
+    console.tag('manual', 'start').log(core.env(ctx, 'start'));
 
     var terminal = core.exec(['cd', ctx.dir, '&&', script].join(' '), noop,
                              {cwd: ctx.dir, env: core.env(ctx, 'start'), log: false, stdio: ['pipe', 1, 2]});
