@@ -39,14 +39,14 @@ var scribeOpts = {
   "app": 'branch-off',
   "id": process.pid,
   "expose": {
-    "default": [
+    "default": process.env.pmx_module ? [
       "socket",
       "bash"
-    ],
-    "express": [
+    ] : ["bash"],
+    "express": process.env.pmx_module ? [
       "express-socket",
       "express-bash"
-    ]
+    ] : ["express-bash"]
   },
   "expose/pipeline": {
     "socket": [
