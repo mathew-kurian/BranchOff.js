@@ -379,7 +379,7 @@ if (require.main === module && process.env.pmx_module) {
     console.tag('manual', 'trigger').log(core.env(ctx, event));
     console.tag('manual', 'trigger').log(mode, args);
 
-    var terminal = core.trigger(ctx, event, noop, [mode || ctx.mode].concat(args), {log: false, stdio: ['pipe', 1, 2]});
+    var terminal = core.trigger(ctx, event, noop, args, {log: false, stdio: ['pipe', 1, 2]});
 
     if (!terminal) {
       return process.exit(1);
